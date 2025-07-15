@@ -7,7 +7,6 @@ import History from './components/History';
 import Recipes from './components/Recipes';
 import AIChat from './components/AIChat';
 import FloatingAIButton from './components/FloatingAIButton';
-import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
 import { computeDailyTargets } from './utils/nutrition';
@@ -58,7 +57,6 @@ function App() {
 
   const [weightHistory, setWeightHistory] = useLocalStorage<{ date: string; weight: number }[]>('nutritalk-weight-history', []);
 
-  const [loggedIn, setLoggedIn] = useLocalStorage<boolean>('nutritalk-logged-in', false);
 
   const [currentView, setCurrentView] = useState('dashboard');
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
@@ -84,38 +82,27 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (loggedIn && user.id) {
+    if (user.id) {
       const today = new Date().toISOString().split('T')[0];
       getProfile(user.id).then(setUser).catch(() => {});
       getDailyLog(user.id, today).then(log => {
         if (log) setDailyLog(log);
       }).catch(() => {});
     }
-  }, [loggedIn, user.id, setUser, setDailyLog]);
+  }, [user.id, setUser, setDailyLog]);
 
   useEffect(() => {
-    if (loggedIn && user.id) {
+    if (user.id) {
       saveDailyLog(user.id, dailyLog.date, dailyLog).catch(() => {});
     }
-  }, [dailyLog, loggedIn, user.id]);
+  }, [dailyLog, user.id]);
 
   useEffect(() => {
-    if (loggedIn && user.id) {
+    if (user.id) {
       updateProfile(user.id, user).catch(() => {});
     }
-  }, [user, loggedIn, user.id]);
+  }, [user, user.id]);
 
-  if (!loggedIn) {
-    return (
-      <Login
-        user={user}
-        onLogin={(u) => {
-          setUser(u);
-          setLoggedIn(true);
-        }}
-      />
-    );
-  }
 
   const addFoodEntry = (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {
     const newEntry: FoodEntry = {
@@ -204,7 +191,7 @@ function App() {
       case 'recipes':
         return <Recipes />;
       case 'profile':
-        return <Profile user={user} onUpdateUser={setUser} onLogout={() => setLoggedIn(false)} />;
+        return <Profile user={user} onUpdateUser={setUser} />;
       case 'history':
         return <History user={user} weightHistory={weightHistory} />;
       default:
