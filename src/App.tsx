@@ -12,6 +12,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
 import { computeDailyTargets } from './utils/nutrition';
 import { loadLocalFoodBase } from './utils/openFoodFacts';
+import { getDailyLog, saveDailyLog, updateProfile, getProfile } from './utils/api';
 
 function App() {
   const defaultUser = {
@@ -82,6 +83,28 @@ function App() {
     console.log('First local foods', foods.slice(0, 5));
   }, []);
 
+  useEffect(() => {
+    if (loggedIn && user.id) {
+      const today = new Date().toISOString().split('T')[0];
+      getProfile(user.id).then(setUser).catch(() => {});
+      getDailyLog(user.id, today).then(log => {
+        if (log) setDailyLog(log);
+      }).catch(() => {});
+    }
+  }, [loggedIn, user.id, setUser, setDailyLog]);
+
+  useEffect(() => {
+    if (loggedIn && user.id) {
+      saveDailyLog(user.id, dailyLog.date, dailyLog).catch(() => {});
+    }
+  }, [dailyLog, loggedIn, user.id]);
+
+  useEffect(() => {
+    if (loggedIn && user.id) {
+      updateProfile(user.id, user).catch(() => {});
+    }
+  }, [user, loggedIn, user.id]);
+
   if (!loggedIn) {
     return (
       <Login
@@ -111,6 +134,7 @@ function App() {
     };
 
     setDailyLog(updatedLog);
+    if (user.id) saveDailyLog(user.id, updatedLog.date, updatedLog).catch(() => {});
   };
 
   const removeFoodEntry = (id: string) => {
@@ -127,26 +151,33 @@ function App() {
     };
 
     setDailyLog(updatedLog);
+    if (user.id) saveDailyLog(user.id, updatedLog.date, updatedLog).catch(() => {});
   };
 
   const updateWater = (amount: number) => {
-    setDailyLog(prev => ({
-      ...prev,
-      water: Math.max(0, prev.water + amount)
-    }));
+    setDailyLog(prev => {
+      const updated = { ...prev, water: Math.max(0, prev.water + amount) };
+      if (user.id) saveDailyLog(user.id, updated.date, updated).catch(() => {});
+      return updated;
+    });
   };
 
   const updateSteps = (amount: number) => {
-    setDailyLog(prev => ({
-      ...prev,
-      steps: Math.max(0, prev.steps + amount)
-    }));
+    setDailyLog(prev => {
+      const updated = { ...prev, steps: Math.max(0, prev.steps + amount) };
+      if (user.id) saveDailyLog(user.id, updated.date, updated).catch(() => {});
+      return updated;
+    });
   };
 
   const updateWeight = (delta: number) => {
     const newWeight = Math.max(0, user.weight + delta);
     setUser(prev => ({ ...prev, weight: newWeight }));
-    setDailyLog(prev => ({ ...prev, weight: newWeight }));
+    setDailyLog(prev => {
+      const updated = { ...prev, weight: newWeight };
+      if (user.id) saveDailyLog(user.id, updated.date, updated).catch(() => {});
+      return updated;
+    });
     const today = new Date().toISOString().split('T')[0];
     setWeightHistory(prev => {
       const filtered = prev.filter(p => p.date !== today);
