@@ -24,6 +24,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
       gender: formData.gender,
       activityLevel: formData.activityLevel,
       goal: formData.goal,
+      macroRatio: formData.macroRatio,
     });
 
     const updated = { ...formData } as UserType;
@@ -33,7 +34,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
     }
 
     if (!locks.protein && !locks.carbs && !locks.fat) {
-      const macros = calculateMacroTargets(updated.dailyCalories);
+      const macros = calculateMacroTargets(updated.dailyCalories, updated.macroRatio);
       updated.dailyProtein = macros.protein;
       updated.dailyCarbs = macros.carbs;
       updated.dailyFat = macros.fat;
@@ -52,7 +53,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
         if (key === 'carbs') updated.dailyCarbs = Math.round(remaining / 4);
         if (key === 'fat') updated.dailyFat = Math.round(remaining / 9);
       } else {
-        const macros = calculateMacroTargets(updated.dailyCalories);
+        const macros = calculateMacroTargets(updated.dailyCalories, updated.macroRatio);
         if (!locks.protein) updated.dailyProtein = macros.protein;
         if (!locks.carbs) updated.dailyCarbs = macros.carbs;
         if (!locks.fat) updated.dailyFat = macros.fat;
@@ -81,6 +82,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
       gender: formData.gender,
       activityLevel: formData.activityLevel,
       goal: formData.goal,
+      macroRatio: formData.macroRatio,
     });
 
     const prev = autoTargetsRef.current;
@@ -101,7 +103,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
         dailyFat: locks.fat ? f.dailyFat : newTargets.fat,
       }));
     }
-  }, [formData.weight, formData.height, formData.age, formData.gender, formData.activityLevel, formData.goal, formData.dailyCalories, formData.dailyProtein, formData.dailyCarbs, formData.dailyFat, locks.calories, locks.protein, locks.carbs, locks.fat]);
+  }, [formData.weight, formData.height, formData.age, formData.gender, formData.activityLevel, formData.goal, formData.dailyCalories, formData.dailyProtein, formData.dailyCarbs, formData.dailyFat, formData.macroRatio, locks.calories, locks.protein, locks.carbs, locks.fat]);
 
   const calculateBMI = () => {
     const heightInMeters = formData.height / 100;
@@ -116,6 +118,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
       gender: formData.gender,
       activityLevel: formData.activityLevel,
       goal: formData.goal,
+      macroRatio: formData.macroRatio,
     }).calories;
   };
   return (
@@ -404,6 +407,75 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
               />
             ) : (
               <p className="text-gray-700 dark:text-gray-300">{user.dailyFat} g</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">% Protéines</label>
+            {isEditing ? (
+              <NumberStepper
+                value={formData.macroRatio.protein}
+                onChange={(val) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    macroRatio: {
+                      ...prev.macroRatio,
+                      protein: typeof val === 'number' ? val : val(prev.macroRatio.protein),
+                    },
+                  }))
+                }
+                locked={false}
+                onToggleLock={() => {}}
+                showLock={false}
+              />
+            ) : (
+              <p className="text-gray-700 dark:text-gray-300">{user.macroRatio.protein}%</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">% Glucides</label>
+            {isEditing ? (
+              <NumberStepper
+                value={formData.macroRatio.carbs}
+                onChange={(val) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    macroRatio: {
+                      ...prev.macroRatio,
+                      carbs: typeof val === 'number' ? val : val(prev.macroRatio.carbs),
+                    },
+                  }))
+                }
+                locked={false}
+                onToggleLock={() => {}}
+                showLock={false}
+              />
+            ) : (
+              <p className="text-gray-700 dark:text-gray-300">{user.macroRatio.carbs}%</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">% Lipides</label>
+            {isEditing ? (
+              <NumberStepper
+                value={formData.macroRatio.fat}
+                onChange={(val) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    macroRatio: {
+                      ...prev.macroRatio,
+                      fat: typeof val === 'number' ? val : val(prev.macroRatio.fat),
+                    },
+                  }))
+                }
+                locked={false}
+                onToggleLock={() => {}}
+                showLock={false}
+              />
+            ) : (
+              <p className="text-gray-700 dark:text-gray-300">{user.macroRatio.fat}%</p>
             )}
           </div>
 

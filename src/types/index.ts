@@ -12,6 +12,11 @@ export interface User {
   dailyCarbs: number;
   dailyFat: number;
   dailyWater: number;
+  macroRatio: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
   password?: string;
   stepGoal: number;
   avatar: string;

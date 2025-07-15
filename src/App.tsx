@@ -28,7 +28,8 @@ function App() {
     notifications: true,
     password: 'password',
     stepGoal: 10000,
-    dailyWater: 2000
+    dailyWater: 2000,
+    macroRatio: { protein: 25, carbs: 50, fat: 25 }
   };
 
   const targets = computeDailyTargets(defaultUser);
@@ -39,7 +40,8 @@ function App() {
     dailyProtein: targets.protein,
     dailyCarbs: targets.carbs,
     dailyFat: targets.fat,
-    dailyWater: defaultUser.dailyWater
+    dailyWater: defaultUser.dailyWater,
+    macroRatio: defaultUser.macroRatio
   });
 
   const [dailyLog, setDailyLog] = useLocalStorage<DailyLog>('nutritalk-daily-log', {

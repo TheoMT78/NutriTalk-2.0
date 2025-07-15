@@ -52,3 +52,4 @@ Ces fonctionnalités reposent sur l'API publique OpenFoodFacts.
 
 - Mode hors-ligne grâce à un service worker qui met en cache l'application et les recherches OpenFoodFacts.
 - Authentification simplifiée via un petit serveur Express stockant les utilisateurs localement avec bcrypt et JWT.
+- Répartition personnalisable des macronutriments pour le calcul automatique des objectifs.
