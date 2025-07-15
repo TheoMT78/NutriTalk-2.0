@@ -266,6 +266,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
   };
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const voiceResultRef = useRef('');
 
   const handleVoiceInput = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -287,6 +288,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     recognition.interimResults = true;
 
     recognition.onstart = () => {
+      voiceResultRef.current = '';
       setIsListening(true);
     };
 
@@ -294,6 +296,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       const transcript = Array.from(event.results)
         .map(r => r[0].transcript)
         .join(' ');
+      voiceResultRef.current = transcript;
       setInput(transcript);
     };
 
@@ -303,6 +306,9 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
 
     recognition.onend = () => {
       setIsListening(false);
+      if (voiceResultRef.current.trim()) {
+        handleSendMessage();
+      }
     };
 
     recognition.start();

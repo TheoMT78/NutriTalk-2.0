@@ -3,6 +3,9 @@ import cors from 'cors';
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import { v4 as uuid } from 'uuid';
+import bcrypt from 'bcryptjs';
+import https from 'https';
+import fs from 'fs';
 
 const app = express();
 app.use(cors());
@@ -18,7 +21,8 @@ app.post('/api/register', async (req, res) => {
   if (db.data.users.find(u => u.email === user.email)) {
     return res.status(400).json({ error: 'Email already registered' });
   }
-  const newUser = { ...user, id: uuid() };
+  const hashed = await bcrypt.hash(user.password, 10);
+  const newUser = { ...user, password: hashed, id: uuid() };
   db.data.users.push(newUser);
   await db.write();
   const { password, ...safe } = newUser;
@@ -28,8 +32,10 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   await db.read();
-  const user = db.data.users.find(u => u.email === email && u.password === password);
+  const user = db.data.users.find(u => u.email === email);
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.status(401).json({ error: 'Invalid credentials' });
   const { password: pw, ...safe } = user;
   res.json(safe);
 });
@@ -70,6 +76,16 @@ app.post('/api/logs/:userId/:date', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`);
-});
+if (process.env.SSL_KEY && process.env.SSL_CERT) {
+  const options = {
+    key: fs.readFileSync(process.env.SSL_KEY),
+    cert: fs.readFileSync(process.env.SSL_CERT)
+  };
+  https.createServer(options, app).listen(PORT, () => {
+    console.log(`HTTPS server listening on ${PORT}`);
+  });
+} else {
+  app.listen(PORT, () => {
+    console.log(`Server listening on ${PORT}`);
+  });
+}

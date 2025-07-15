@@ -141,5 +141,10 @@ export const foodDatabase: FoodItem[] = [
   { id: '118', name: 'Grenade', calories: 83, protein: 1.7, carbs: 19, fat: 1.2, category: 'Fruits', unit: '100g' },
   { id: '119', name: 'Patate douce cuite', calories: 90, protein: 1.6, carbs: 20, fat: 0.1, category: 'Féculents', unit: '100g' },
   { id: '120', name: 'Patate douce crue', calories: 86, protein: 1.6, carbs: 20, fat: 0.1, category: 'Féculents', unit: '100g' },
-  { id: '121', name: 'Kiwi jaune', calories: 60, protein: 1.1, carbs: 15, fat: 0.5, category: 'Fruits', unit: '100g' }
+  { id: '121', name: 'Kiwi jaune', calories: 60, protein: 1.1, carbs: 15, fat: 0.5, category: 'Fruits', unit: '100g' },
+  { id: '122', name: 'Lentilles cuites', calories: 116, protein: 9, carbs: 20, fat: 0.4, category: 'Légumineuses', unit: '100g' },
+  { id: '123', name: 'Haricots rouges cuits', calories: 127, protein: 8.7, carbs: 22.8, fat: 0.5, category: 'Légumineuses', unit: '100g' },
+  { id: '124', name: 'Tofu ferme', calories: 126, protein: 13, carbs: 3, fat: 8, category: 'Protéines', unit: '100g' },
+  { id: '125', name: 'Steak haché 5%', calories: 137, protein: 20, carbs: 0, fat: 5, category: 'Protéines', unit: '100g' },
+  { id: '126', name: 'Yaourt grec', calories: 59, protein: 10, carbs: 3.6, fat: 0.4, category: 'Produits laitiers', unit: '100g' }
 ];
