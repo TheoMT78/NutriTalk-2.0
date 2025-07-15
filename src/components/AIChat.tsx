@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchProductFallback } from '../utils/openFoodFacts';
 import { findClosestFood } from '../utils/findClosestFood';
+import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { Recipe } from '../types';
 
 interface AIChatProps {
@@ -86,7 +87,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     }
 
     // Base de données simplifiée pour la reconnaissance
-    const foodDatabase = [
+    const keywordFoods = [
       { keywords: ['pâtes', 'pasta', 'spaghetti', 'tagliatelle'], food: { name: 'Pâtes cuites', calories: 131, protein: 5, carbs: 25, fat: 1.1, category: 'Féculents', unit: '100g' }},
       { keywords: ['riz', 'rice'], food: { name: 'Riz blanc cuit', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, category: 'Féculents', unit: '100g' }},
       { keywords: ['poulet', 'chicken'], food: { name: 'Blanc de poulet', calories: 165, protein: 31, carbs: 0, fat: 3.6, category: 'Protéines', unit: '100g' }},
@@ -103,6 +104,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       { keywords: ['bœuf', 'beef'], food: { name: 'Bœuf haché 5%', calories: 137, protein: 20, carbs: 0, fat: 5, category: 'Protéines', unit: '100g' }},
       { keywords: ['saumon', 'salmon'], food: { name: 'Saumon', calories: 208, protein: 22, carbs: 0, fat: 13, category: 'Protéines', unit: '100g' }},
       { keywords: ['brocoli', 'broccoli'], food: { name: 'Brocolis', calories: 34, protein: 2.8, carbs: 7, fat: 0.4, category: 'Légumes', unit: '100g' }},
+      { keywords: ['farine', 'farine de blé', 'flour', 'farina'], food: { name: 'Farine de blé', calories: 364, protein: 10, carbs: 76, fat: 1, category: 'Féculents', unit: '100g' }},
     ];
 
     // Détection des quantités
@@ -124,7 +126,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     };
 
     // Analyse du texte
-    foodDatabase.forEach(({ keywords, food }) => {
+    keywordFoods.forEach(({ keywords, food }) => {
       const found = keywords.some(keyword => lowerDescription.includes(keyword));
       if (found) {
         const quantity = extractQuantity(lowerDescription, keywords[0]);
@@ -150,7 +152,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       }
     });
     if (suggestions.length === 0) {
-      const closest = findClosestFood(description, foodDatabase.map(f => f.food));
+      const closest = findClosestFood(description, [...keywordFoods.map(f => f.food), ...fullFoodBase]);
       if (closest) {
         suggestions.push({
           name: closest.name,
