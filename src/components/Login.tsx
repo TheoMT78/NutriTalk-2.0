@@ -3,24 +3,30 @@ import { User } from '../types';
 
 interface LoginProps {
   user: User;
-  onLogin: (user: User) => void;
+  onLogin: (user: User, token: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignup, setIsSignup] = useState(!user.password);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignup) {
-      onLogin({ ...user, email, password });
-    } else {
-      if (email === user.email && password === user.password) {
-        onLogin(user);
-      } else {
-        alert('Email ou mot de passe incorrect');
-      }
+    setError('');
+    const endpoint = isSignup ? 'signup' : 'login';
+    try {
+      const res = await fetch(`http://localhost:3001/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name: user.name }),
+      });
+      if (!res.ok) throw new Error('Erreur');
+      const data = await res.json();
+      onLogin({ ...user, email }, data.token);
+    } catch {
+      setError('Email ou mot de passe incorrect');
     }
   };
 
@@ -30,6 +36,9 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         <h2 className="text-xl font-bold text-center">
           {isSignup ? 'Créer un compte' : 'Connexion'}
         </h2>
+        {error && (
+          <div className="text-red-500 text-sm text-center">{error}</div>
+        )}
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input

@@ -58,6 +58,7 @@ function App() {
   const [weightHistory, setWeightHistory] = useLocalStorage<{ date: string; weight: number }[]>('nutritalk-weight-history', []);
 
   const [loggedIn, setLoggedIn] = useLocalStorage<boolean>('nutritalk-logged-in', false);
+  const [token, setToken] = useLocalStorage<string | null>('nutritalk-token', null);
 
   const [currentView, setCurrentView] = useState('dashboard');
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
@@ -82,12 +83,30 @@ function App() {
     console.log('First local foods', foods.slice(0, 5));
   }, []);
 
+  useEffect(() => {
+    if (token && !loggedIn) {
+      fetch('http://localhost:3001/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then((data) => {
+          setUser((u) => ({ ...u, email: data.email, name: data.name }));
+          setLoggedIn(true);
+        })
+        .catch(() => {
+          setToken(null);
+          setLoggedIn(false);
+        });
+    }
+  }, [token, loggedIn, setLoggedIn, setToken, setUser]);
+
   if (!loggedIn) {
     return (
       <Login
         user={user}
-        onLogin={(u) => {
+        onLogin={(u, t) => {
           setUser(u);
+          setToken(t);
           setLoggedIn(true);
         }}
       />
@@ -154,6 +173,12 @@ function App() {
     });
   };
 
+  const handleLogout = () => {
+    setLoggedIn(false);
+    setToken(null);
+    window.localStorage.removeItem('nutritalk-token');
+  };
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
@@ -173,7 +198,7 @@ function App() {
       case 'recipes':
         return <Recipes />;
       case 'profile':
-        return <Profile user={user} onUpdateUser={setUser} onLogout={() => setLoggedIn(false)} />;
+        return <Profile user={user} onUpdateUser={setUser} onLogout={handleLogout} />;
       case 'history':
         return <History user={user} weightHistory={weightHistory} />;
       default:
