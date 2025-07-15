@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { v4 as uuid } from 'uuid';
 import bcrypt from 'bcryptjs';
 import https from 'https';
@@ -11,7 +13,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = new Low(new JSONFile('./db.json'), { users: [], logs: [] });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dbFile = path.join(__dirname, 'db.json');
+const db = new Low(new JSONFile(dbFile), { users: [], logs: [] });
 await db.read();
 if (!db.data) db.data = { users: [], logs: [] };
 
