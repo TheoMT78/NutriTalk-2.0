@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
+import { login, register } from '../utils/api';
 
 interface LoginProps {
   user: User;
@@ -11,16 +12,18 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
   const [password, setPassword] = useState('');
   const [isSignup, setIsSignup] = useState(!user.password);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignup) {
-      onLogin({ ...user, email, password });
-    } else {
-      if (email === user.email && password === user.password) {
-        onLogin(user);
+    try {
+      if (isSignup) {
+        const newUser = await register({ ...user, email, password });
+        onLogin(newUser);
       } else {
-        alert('Email ou mot de passe incorrect');
+        const logged = await login(email, password);
+        onLogin(logged);
       }
+    } catch {
+      alert('Email ou mot de passe incorrect');
     }
   };
 

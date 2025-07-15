@@ -2,15 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { computeDailyTargets, calculateMacroTargets } from '../utils/nutrition';
 import { User as UserIcon, Settings, Target, Activity, Palette } from 'lucide-react';
 import NumberStepper from './NumberStepper';
-import { User as UserType } from '../types';
+import MFPImportExport from './MFPImportExport';
+import { User as UserType, DailyLog, FoodEntry } from '../types';
 
 interface ProfileProps {
   user: UserType;
+  dailyLog: DailyLog;
   onUpdateUser: (user: UserType) => void;
+  onImportEntries: (entries: FoodEntry[]) => void;
   onLogout?: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
+const Profile: React.FC<ProfileProps> = ({ user, dailyLog, onUpdateUser, onImportEntries, onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(user);
   const [locks, setLocks] = useState({ calories: false, protein: false, carbs: false, fat: false });
@@ -503,6 +506,12 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout }) => {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Import/Export MyFitnessPal */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 mt-6">
+        <h3 className="text-lg font-semibold mb-4">MyFitnessPal</h3>
+        <MFPImportExport log={dailyLog} onImport={onImportEntries} />
       </div>
     </div>
   );
