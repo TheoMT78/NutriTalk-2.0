@@ -34,8 +34,21 @@ app.post('/api/login', async (req, res) => {
   await db.read();
   const user = db.data.users.find(u => u.email === email);
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+
+  let passwordValid = false;
+  if (user.password.startsWith('$2')) {
+    passwordValid = await bcrypt.compare(password, user.password);
+  } else {
+    // Support legacy accounts with plain text passwords
+    if (password === user.password) {
+      const hashed = await bcrypt.hash(password, 10);
+      user.password = hashed;
+      await db.write();
+      passwordValid = true;
+    }
+  }
+
+  if (!passwordValid) return res.status(401).json({ error: 'Invalid credentials' });
   const { password: pw, ...safe } = user;
   res.json(safe);
 });
