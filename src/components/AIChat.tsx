@@ -160,11 +160,32 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     setInput('');
     setIsLoading(true);
 
-    // Simulated AI processing
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      setIsLoading(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: "Je n'ai pas pu traiter votre demande. Essayez de simplifier ou corriger votre phrase.",
+          timestamp: new Date()
+        }
+      ]);
+    }, 10000);
 
-    const suggestions = await analyzeFood(input);
-    const recipe = parseRecipe(input);
+    try {
+      // Simulated AI processing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const suggestions = await analyzeFood(input).catch(e => {
+        console.error('analyzeFood error', e);
+        return [] as FoodSuggestion[];
+      });
+      const recipe = parseRecipe(input);
+
+      if (timedOut) return;
     
     let aiResponse = '';
     if (suggestions.length > 0) {
@@ -207,7 +228,23 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     };
 
     setMessages(prev => [...prev, aiMessage]);
-    setIsLoading(false);
+  } catch (e) {
+    console.error('handleSendMessage error', e);
+    if (!timedOut) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: "Je n'ai pas pu traiter votre demande. Essayez de simplifier ou corriger votre phrase.",
+          timestamp: new Date()
+        }
+      ]);
+    }
+  } finally {
+    clearTimeout(timeout);
+    if (!timedOut) setIsLoading(false);
+  }
   };
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);

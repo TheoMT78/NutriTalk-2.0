@@ -31,7 +31,8 @@ export async function fetchProductByBarcode(barcode: string): Promise<OFFProduct
     const data = await res.json();
     if (!data.product) return null;
     return data.product as OFFProduct;
-  } catch {
+  } catch (e) {
+    console.error('fetchProductByBarcode error', e);
     return null;
   }
 }
@@ -45,48 +46,54 @@ export async function searchProduct(query: string): Promise<OFFProduct[]> {
     }
     const data = await res.json();
     return (data.products as OFFProduct[]) || [];
-  } catch {
+  } catch (e) {
+    console.error('searchProduct error', e);
     return [];
   }
 }
 
 export async function searchProductFallback(query: string): Promise<OFFProduct[]> {
-  let cleaned = query.trim();
-  const brandMatch = cleaned.match(/(?:marque|brand)\s+([^,]+)/i);
-  if (brandMatch) {
-    const brand = brandMatch[1].trim();
-    cleaned = cleaned.replace(brandMatch[0], '').trim();
-    let byBrand = await searchProduct(`${cleaned} ${brand}`);
-    if (byBrand.length > 0) return byBrand;
-    byBrand = await searchProduct(brand);
-    if (byBrand.length > 0) {
-      const lowered = cleaned.toLowerCase();
-      const filtered = byBrand.filter(p => p.product_name?.toLowerCase().includes(lowered));
-      if (filtered.length > 0) return filtered;
+  try {
+    let cleaned = query.trim();
+    const brandMatch = cleaned.match(/(?:marque|brand)\s+([^,]+)/i);
+    if (brandMatch) {
+      const brand = brandMatch[1].trim();
+      cleaned = cleaned.replace(brandMatch[0], '').trim();
+      let byBrand = await searchProduct(`${cleaned} ${brand}`);
+      if (byBrand.length > 0) return byBrand;
+      byBrand = await searchProduct(brand);
+      if (byBrand.length > 0) {
+        const lowered = cleaned.toLowerCase();
+        const filtered = byBrand.filter(p => p.product_name?.toLowerCase().includes(lowered));
+        if (filtered.length > 0) return filtered;
+      }
     }
-  }
 
-  let results = await searchProduct(cleaned);
-  if (results.length > 0) return results;
-
-  const terms = cleaned.split(/\s+/).filter(Boolean);
-  const synonyms: Record<string, string[]> = {
-    farine: ['flour'],
-    flour: ['farine'],
-    beurre: ['butter'],
-    butter: ['beurre'],
-    riz: ['rice'],
-    rice: ['riz']
-  };
-
-  for (const term of terms) {
-    results = await searchProduct(term);
+    let results = await searchProduct(cleaned);
     if (results.length > 0) return results;
-    const extra = synonyms[term.toLowerCase()] || [];
-    for (const alt of extra) {
-      results = await searchProduct(alt);
+
+    const terms = cleaned.split(/\s+/).filter(Boolean);
+    const synonyms: Record<string, string[]> = {
+      farine: ['flour'],
+      flour: ['farine'],
+      beurre: ['butter'],
+      butter: ['beurre'],
+      riz: ['rice'],
+      rice: ['riz']
+    };
+
+    for (const term of terms) {
+      results = await searchProduct(term);
       if (results.length > 0) return results;
+      const extra = synonyms[term.toLowerCase()] || [];
+      for (const alt of extra) {
+        results = await searchProduct(alt);
+        if (results.length > 0) return results;
+      }
     }
+    return [];
+  } catch (e) {
+    console.error('searchProductFallback error', e);
+    return [];
   }
-  return [];
 }

@@ -43,8 +43,8 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
           };
         }
       }
-    } catch {
-      /* empty */
+    } catch (e) {
+      console.error('Edamam API error', e);
     }
   }
 
@@ -75,8 +75,8 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
           }
         }
       }
-    } catch {
-      /* empty */
+    } catch (e) {
+      console.error('Spoonacular API error', e);
     }
   }
 
@@ -107,8 +107,8 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
           }
         }
       }
-    } catch {
-      /* empty */
+    } catch (e) {
+      console.error('Google Custom Search error', e);
     }
   }
 
