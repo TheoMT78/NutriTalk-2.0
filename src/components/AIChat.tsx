@@ -125,15 +125,28 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       dix: 10
     };
 
-    const parseToken = (t: string): number | null => {
+    interface Qty {
+      value: number;
+      unit: 'g' | 'ml' | 'unit';
+    }
+
+    const parseToken = (t: string): Qty | null => {
       const cleaned = t.toLowerCase();
-      if (wordsMap[cleaned] !== undefined) return wordsMap[cleaned];
-      const num = cleaned.match(/^(\d+(?:[.,]\d+)?)(?:g|gr|grammes?|kg|ml|cl|l)?$/);
-      if (num) return parseFloat(num[1].replace(',', '.'));
+      if (wordsMap[cleaned] !== undefined) return { value: wordsMap[cleaned], unit: 'unit' };
+      const num = cleaned.match(/^(\d+(?:[.,]\d+)?)(kg|g|gr|grammes?|ml|cl|l)?$/);
+      if (num) {
+        let value = parseFloat(num[1].replace(',', '.'));
+        const u = num[2] || 'g';
+        if (u === 'kg') value *= 1000;
+        if (u === 'cl') value *= 10;
+        if (u === 'l') value *= 1000;
+        const unit = u.includes('ml') || u === 'cl' || u === 'l' ? 'ml' : 'g';
+        return { value, unit };
+      }
       return null;
     };
 
-    const extractQuantityNear = (tokens: string[], idx: number): number => {
+    const extractQuantityNear = (tokens: string[], idx: number): Qty => {
       for (let i = idx - 1; i >= 0 && i >= idx - 3; i--) {
         const q = parseToken(tokens[i]);
         if (q !== null) return q;
@@ -142,7 +155,14 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         const q = parseToken(tokens[i]);
         if (q !== null) return q;
       }
-      return 100;
+      return { value: 100, unit: 'g' };
+    };
+
+    const portionWeights: Record<string, number> = {
+      'œufs': 60,
+      'oeufs': 60,
+      'kiwi jaune': 100,
+      'kiwi': 75
     };
 
     const tokens = lowerDescription
@@ -156,13 +176,21 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       keywordFoods.forEach(({ keywords, food }) => {
         if (keywords.some(k => base === k || base === `${k}s`)) {
           if (used.has(idx)) return;
-          const quantity = extractQuantityNear(tokens, idx);
+          const qty = extractQuantityNear(tokens, idx);
           used.add(idx);
-          const multiplier = quantity / 100;
+          const baseAmount = parseFloat(food.unit) || 100;
+          let grams = qty.value;
+          let displayUnit = food.unit;
+          if (qty.unit === 'unit') {
+            const w = portionWeights[food.name.toLowerCase()] || baseAmount;
+            grams = qty.value * w;
+            displayUnit = qty.value > 1 ? 'unités' : 'unité';
+          }
+          const multiplier = grams / baseAmount;
           suggestions.push({
             name: food.name,
-            quantity,
-            unit: food.unit,
+            quantity: qty.value,
+            unit: displayUnit,
             calories: food.calories * multiplier,
             protein: food.protein * multiplier,
             carbs: food.carbs * multiplier,
@@ -188,11 +216,19 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       const closest = findClosestFood(clean, fullFoodBase);
       if (closest && !suggestions.some(s => s.name === closest.name)) {
         const q = extractQuantityNear(tokens, i);
-        const mult = q / 100;
+        const baseAmount = parseFloat(closest.unit) || 100;
+        let grams = q.value;
+        let displayUnit = closest.unit;
+        if (q.unit === 'unit') {
+          const w = portionWeights[closest.name.toLowerCase()] || baseAmount;
+          grams = q.value * w;
+          displayUnit = q.value > 1 ? 'unités' : 'unité';
+        }
+        const mult = grams / baseAmount;
         suggestions.push({
           name: closest.name,
-          quantity: q,
-          unit: closest.unit,
+          quantity: q.value,
+          unit: displayUnit,
           calories: closest.calories * mult,
           protein: closest.protein * mult,
           carbs: closest.carbs * mult,
@@ -211,11 +247,19 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         const ext = await searchNutrition(clean);
         if (ext) {
           const q = extractQuantityNear(tokens, i);
-          const mult = q / 100;
+          const baseAmount = parseFloat(ext.unit || '100') || 100;
+          let grams = q.value;
+          let displayUnit = ext.unit || 'g';
+          if (q.unit === 'unit') {
+            const w = portionWeights[ext.name.toLowerCase()] || baseAmount;
+            grams = q.value * w;
+            displayUnit = q.value > 1 ? 'unités' : 'unité';
+          }
+          const mult = grams / baseAmount;
           suggestions.push({
             name: ext.name,
-            quantity: q,
-            unit: ext.unit || 'g',
+            quantity: q.value,
+            unit: displayUnit,
             calories: (ext.calories || 0) * mult,
             protein: (ext.protein || 0) * mult,
             carbs: (ext.carbs || 0) * mult,
