@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "npm install --prefix server"
+    "postinstall": "npm install --prefix server",
+    "update-food-db": "node scripts/updateFoodDB.js 5000"
   },
   "dependencies": {
     "@zxing/browser": "^0.1.5",

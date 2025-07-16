@@ -15,6 +15,12 @@ Le script `postinstall` installe aussi les dépendances du dossier `server`. Dé
 (cd server && npm start)
 ```
 
+Pour étendre la base d'aliments locale, exécutez :
+
+```bash
+npm run update-food-db
+```
+
 ## Configuration
 
 L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
@@ -55,6 +61,8 @@ Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 - Le suivi des pas affiche le pourcentage exact même au-delà de 100%.
 - Base d'aliments enrichie avec encore plus de produits crus, légumineuses et fruits pour de meilleurs résultats lors des recherches.
 - Une base locale de 500 aliments issus d'OpenFoodFacts est embarquée dans `aliments.json`.
+  Vous pouvez l'enrichir en exécutant `npm run update-food-db` qui télécharge
+  plusieurs milliers d'aliments supplémentaires depuis OpenFoodFacts.
 - Ajout de nouveaux aliments comme la patate douce et le kiwi jaune pour améliorer la reconnaissance hors ligne.
 - Historique enrichi avec graphiques du poids et du nombre de pas.
 - Historique d'exemple d'un an pour visualiser immédiatement les graphiques.
