@@ -41,12 +41,31 @@ function capitalize(str: string): string {
 }
 
 export function parseFoods(text: string): ParsedFood[] {
-  const segments = text
-    .replace(/\bavec\b/gi, ',')
-    .replace(/\bet\b/gi, ',')
-    .split(/[,;]/)
-    .map(s => s.trim())
-    .filter(Boolean);
+  const numWords = ['un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
+  const connectors = ['et', 'avec', 'puis', 'alors'];
+
+  const tokens = text.toLowerCase().split(/\s+/);
+  const segments: string[] = [];
+  let current = '';
+  let started = false;
+
+  for (const tok of tokens) {
+    const isNum = /^\d+(?:[.,]\d+)?$/.test(tok) || numWords.includes(tok);
+    const isConn = connectors.includes(tok);
+
+    if (isNum) {
+      if (started && current.trim()) segments.push(current.trim());
+      current = tok;
+      started = true;
+    } else if (isConn) {
+      if (started && current.trim()) segments.push(current.trim());
+      current = '';
+    } else {
+      current += (current ? ' ' : '') + tok;
+    }
+  }
+
+  if (current.trim()) segments.push(current.trim());
 
   const foods: ParsedFood[] = [];
 
@@ -58,6 +77,7 @@ export function parseFoods(text: string): ParsedFood[] {
     const match = seg.match(pattern);
     if (!match || !match.groups) return;
     const groups = match.groups as Record<string, string>;
+    if (!groups.qty && !groups.unit) return;
     const rawQty = groups.qty ? groups.qty.toLowerCase() : '1';
     const quantity = wordNumbers[rawQty] || parseFloat(rawQty.replace(',', '.')) || 1;
     const unitNorm = normalizeUnit(groups.unit);
