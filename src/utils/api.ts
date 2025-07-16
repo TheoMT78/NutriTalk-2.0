@@ -1,6 +1,15 @@
 import { User, DailyLog } from '../types';
 
-const API = 'http://localhost:3001/api';
+// The API base URL can be configured at build time. Vite exposes variables
+// prefixed with `VITE_` through `import.meta.env`, while a Node environment can
+// use `process.env`.
+const API =
+  (typeof import.meta !== 'undefined'
+    ? (import.meta.env as unknown as Record<string, string | undefined>)
+        .VITE_API_BASE_URL
+    : undefined) ||
+  process.env.VITE_API_BASE_URL ||
+  'http://localhost:3001/api';
 
 export async function login(email: string, password: string) {
   const res = await fetch(`${API}/login`, {
