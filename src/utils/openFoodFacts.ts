@@ -27,6 +27,7 @@ export async function fetchProductByBarcode(barcode: string): Promise<OFFProduct
     const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,nutriments,code,serving_size`;
     const res = await fetch(url);
     if (!res.ok) {
+      console.error('OpenFoodFacts barcode request failed', res.status, res.statusText);
       return null;
     }
     const data = await safeJson(res);
@@ -43,6 +44,7 @@ export async function searchProduct(query: string): Promise<OFFProduct[]> {
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,code,serving_size`;
     const res = await fetch(url);
     if (!res.ok) {
+      console.error('OpenFoodFacts search request failed', res.status, res.statusText);
       return [];
     }
     const data = await safeJson(res);

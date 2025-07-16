@@ -12,10 +12,21 @@ while (products.length < limit) {
   const url = `https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&fields=product_name,nutriments,code,serving_size&page_size=${pageSize}&page=${page}`;
   const res = await fetch(url);
   if (!res.ok) {
-    console.error('Request failed', res.status);
+    console.error('Request failed', res.status, res.statusText);
     break;
   }
-  const data = await res.json();
+  const text = await res.text();
+  if (!text) {
+    console.error('Empty response from', url);
+    break;
+  }
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error('Invalid JSON from', url, e);
+    break;
+  }
   const items = data.products || [];
   if (items.length === 0) break;
   for (const item of items) {

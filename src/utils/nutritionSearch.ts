@@ -36,6 +36,8 @@ async function searchPreferredSites(query: string): Promise<NutritionInfo | null
             return { name: title, ...nut, unit: '100g' };
           }
         }
+      } else {
+        console.error('Preferred site search failed', res.status, res.statusText);
       }
     } catch (e) {
       console.error('Preferred site search error', e);
@@ -91,6 +93,8 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
             unit: '100g'
           };
         }
+      } else {
+        console.error('Edamam API error', res.status, res.statusText);
       }
     } catch (e) {
       console.error('Edamam API error', e);
@@ -121,8 +125,12 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
               fat: get('fat'),
               unit: '100g'
             };
+          } else {
+            console.error('Spoonacular info request failed', iRes.status, iRes.statusText);
           }
         }
+      } else {
+        console.error('Spoonacular search request failed', sRes.status, sRes.statusText);
       }
     } catch (e) {
       console.error('Spoonacular API error', e);

@@ -1,4 +1,5 @@
 import { ParsedFood } from '../types';
+import { safeJson } from './safeJson';
 
 interface LLMFood {
   nom: string;
@@ -33,9 +34,17 @@ export async function parseWithLLM(text: string): Promise<ParsedFood[] | null> {
         ]
       })
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const raw = JSON.parse(data.choices?.[0]?.message?.content || 'null') as LLMFood[] | null;
+    if (!res.ok) {
+      console.error('LLM request failed', res.status, res.statusText);
+      return null;
+    }
+    const data = await safeJson(res);
+    if (!data) {
+      console.error('Failed to parse LLM response');
+      return null;
+    }
+    const rawContent = (data as Record<string, unknown>).choices?.[0]?.message?.content as string | undefined;
+    const raw = JSON.parse(rawContent || 'null') as LLMFood[] | null;
     if (!raw) return null;
     return raw.map(f => ({
       nom: f.nom,

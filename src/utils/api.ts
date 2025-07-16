@@ -59,9 +59,15 @@ export async function login(email: string, password: string) {
     console.error('Network error during login', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Invalid credentials');
+  if (!res.ok) {
+    console.error('Login failed', res.status, res.statusText);
+    throw new Error('Invalid credentials');
+  }
   const data = await safeJson<{ user: User; token: string }>(res);
-  if (!data) throw new Error('Invalid response from server');
+  if (!data) {
+    console.error('Failed to parse login response');
+    throw new Error('Invalid response from server');
+  }
   return data as { user: User; token: string };
 }
 
@@ -75,11 +81,15 @@ export async function register(user: User) {
     throw err;
   });
   if (!res.ok) {
+    console.error('Registration failed', res.status, res.statusText);
     const err = (await safeJson<{ error?: string }>(res)) || {};
     throw new Error(err.error || 'Registration failed');
   }
   const data = await safeJson<{ user: User; token: string }>(res);
-  if (!data) throw new Error('Invalid response from server');
+  if (!data) {
+    console.error('Failed to parse registration response');
+    throw new Error('Invalid response from server');
+  }
   return data as { user: User; token: string };
 }
 
@@ -90,7 +100,10 @@ export async function getDailyLog(userId: string, date: string) {
     console.error('Network error loading log', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Failed to load log');
+  if (!res.ok) {
+    console.error('Failed to load log', res.status, res.statusText);
+    throw new Error('Failed to load log');
+  }
   return safeJson<DailyLog | null>(res);
 }
 
@@ -103,7 +116,10 @@ export async function saveDailyLog(userId: string, date: string, log: DailyLog) 
     console.error('Network error saving log', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Failed to save log');
+  if (!res.ok) {
+    console.error('Failed to save log', res.status, res.statusText);
+    throw new Error('Failed to save log');
+  }
   return safeJson<{ success: true }>(res);
 }
 
@@ -116,8 +132,15 @@ export async function updateProfile(userId: string, data: Partial<User>) {
     console.error('Network error updating profile', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Failed to update profile');
-  return safeJson<User>(res);
+  if (!res.ok) {
+    console.error('Failed to update profile', res.status, res.statusText);
+    throw new Error('Failed to update profile');
+  }
+  const parsed = await safeJson<User>(res);
+  if (!parsed) {
+    console.error('Failed to parse profile update response');
+  }
+  return parsed;
 }
 
 export async function getProfile(userId: string) {
@@ -127,8 +150,15 @@ export async function getProfile(userId: string) {
     console.error('Network error loading profile', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Failed to load profile');
-  return safeJson<User>(res);
+  if (!res.ok) {
+    console.error('Failed to load profile', res.status, res.statusText);
+    throw new Error('Failed to load profile');
+  }
+  const data = await safeJson<User>(res);
+  if (!data) {
+    console.error('Failed to parse profile response');
+  }
+  return data;
 }
 
 export async function getWeightHistory(userId: string) {
@@ -138,8 +168,15 @@ export async function getWeightHistory(userId: string) {
     console.error('Network error loading weights', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Failed to load weights');
-  return safeJson<{ date: string; weight: number }[]>(res);
+  if (!res.ok) {
+    console.error('Failed to load weights', res.status, res.statusText);
+    throw new Error('Failed to load weights');
+  }
+  const data = await safeJson<{ date: string; weight: number }[]>(res);
+  if (!data) {
+    console.error('Failed to parse weights response');
+  }
+  return data;
 }
 
 export async function saveWeightHistory(userId: string, history: { date: string; weight: number }[]) {
@@ -151,8 +188,15 @@ export async function saveWeightHistory(userId: string, history: { date: string;
     console.error('Network error saving weights', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Failed to save weights');
-  return safeJson<{ success: true }>(res);
+  if (!res.ok) {
+    console.error('Failed to save weights', res.status, res.statusText);
+    throw new Error('Failed to save weights');
+  }
+  const data = await safeJson<{ success: true }>(res);
+  if (!data) {
+    console.error('Failed to parse save weights response');
+  }
+  return data;
 }
 
 export async function syncAll(userId: string) {
@@ -162,6 +206,13 @@ export async function syncAll(userId: string) {
     console.error('Network error during sync', err);
     throw err;
   });
-  if (!res.ok) throw new Error('Failed to sync');
-  return safeJson<{ profile: User; logs: unknown; weights: unknown }>(res);
+  if (!res.ok) {
+    console.error('Failed to sync', res.status, res.statusText);
+    throw new Error('Failed to sync');
+  }
+  const data = await safeJson<{ profile: User; logs: unknown; weights: unknown }>(res);
+  if (!data) {
+    console.error('Failed to parse sync response');
+  }
+  return data;
 }
