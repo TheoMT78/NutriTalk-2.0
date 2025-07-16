@@ -59,7 +59,12 @@ export function parseFoods(text: string): ParsedFood[] {
   const numWords = ['un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
   const connectors = ['et', 'avec', 'puis', 'alors'];
 
-  const tokens = text.toLowerCase().split(/\s+/);
+  const cleaned = text
+    .toLowerCase()
+    // split tokens like "100g" or "2ml" into "100 g" so quantities are detected
+    .replace(/(\d+(?:[.,]\d+)?)([a-zà-ÿ]+)/gi, '$1 $2');
+
+  const tokens = cleaned.split(/\s+/);
   const segments: string[] = [];
   let current = '';
   let started = false;
