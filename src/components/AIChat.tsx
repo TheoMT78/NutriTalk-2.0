@@ -3,6 +3,7 @@ import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchNutrition } from '../utils/nutritionSearch';
 import { findClosestFood } from '../utils/findClosestFood';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
+import { keywordFoods } from '../data/keywordFoods';
 import { parseFoods } from '../utils/parseFoods';
 import { Recipe, FoodItem } from '../types';
 

@@ -15,6 +15,17 @@ Le script `postinstall` installe aussi les dépendances du dossier `server`. Dé
 (cd server && npm start)
 ```
 
+## Configuration
+
+L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
+Créez un fichier `.env` à la racine si vous souhaitez cibler un autre serveur :
+
+```bash
+VITE_API_URL=http://localhost:3001/api
+```
+
+Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
+
 
 ## Nouveautés
 

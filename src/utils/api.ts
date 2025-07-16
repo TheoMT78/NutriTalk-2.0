@@ -1,6 +1,7 @@
 import { User, DailyLog } from '../types';
 
-const API = 'http://localhost:3001/api';
+// Allow overriding the API URL via environment variable for easier deployment
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export async function login(email: string, password: string) {
   const res = await fetch(`${API}/login`, {
