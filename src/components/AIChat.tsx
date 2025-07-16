@@ -111,49 +111,62 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       { keywords: ['seitan'], food: { name: 'Seitan', calories: 370, protein: 75, carbs: 14, fat: 1.9, category: 'Protéines', unit: '100g' }},
    ];
 
-    // Détection des quantités
-    const extractQuantity = (text: string, keyword: string) => {
-      const patterns = [
-        new RegExp(`(\\d+)\\s*g.*?${keyword}`, 'i'),
-        new RegExp(`${keyword}.*?(\\d+)\\s*g`, 'i'),
-        new RegExp(`(\\d+)\\s*${keyword}`, 'i'),
-        new RegExp(`${keyword}.*?(\\d+)`, 'i')
-      ];
-      
-      for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-          return parseInt(match[1]);
-        }
+    // Détection des quantités dans une portion de texte
+    const extractQuantity = (segment: string) => {
+      const num = segment.match(/(\d+)\s*(?:g|gr|grammes?|kg|ml|cl|l)?/i);
+      if (num) return parseInt(num[1]);
+
+      const words: Record<string, number> = {
+        un: 1,
+        une: 1,
+        deux: 2,
+        trois: 3,
+        quatre: 4,
+        cinq: 5,
+        six: 6,
+        sept: 7,
+        huit: 8,
+        neuf: 9,
+        dix: 10
+      };
+      for (const [w, n] of Object.entries(words)) {
+        if (new RegExp(`\\b${w}\\b`).test(segment)) return n;
       }
       return 100; // quantité par défaut
     };
 
-    // Analyse du texte
-    keywordFoods.forEach(({ keywords, food }) => {
-      const found = keywords.some(keyword => lowerDescription.includes(keyword));
-      if (found) {
-        const quantity = extractQuantity(lowerDescription, keywords[0]);
-        const multiplier = quantity / 100;
-        
-        suggestions.push({
-          name: food.name,
-          quantity,
-          unit: food.unit,
-          calories: food.calories * multiplier,
-          protein: food.protein * multiplier,
-          carbs: food.carbs * multiplier,
-          fat: food.fat * multiplier,
-          fiber: (food.fiber || 0) * multiplier,
-          vitaminA: (food.vitaminA || 0) * multiplier,
-          vitaminC: (food.vitaminC || 0) * multiplier,
-          calcium: (food.calcium || 0) * multiplier,
-          iron: (food.iron || 0) * multiplier,
-          category: food.category,
-          meal,
-        confidence: 0.8 + Math.random() * 0.2
+    // Analyse du texte par segments pour éviter les confusions de quantités
+    const segments = lowerDescription
+      .split(/(?:,| et |;|\.)+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    segments.forEach(segment => {
+      keywordFoods.forEach(({ keywords, food }) => {
+        const found = keywords.some(k => segment.includes(k));
+        if (found) {
+          const quantity = extractQuantity(segment);
+          const multiplier = quantity / 100;
+
+          suggestions.push({
+            name: food.name,
+            quantity,
+            unit: food.unit,
+            calories: food.calories * multiplier,
+            protein: food.protein * multiplier,
+            carbs: food.carbs * multiplier,
+            fat: food.fat * multiplier,
+            fiber: (food.fiber || 0) * multiplier,
+            vitaminA: (food.vitaminA || 0) * multiplier,
+            vitaminC: (food.vitaminC || 0) * multiplier,
+            calcium: (food.calcium || 0) * multiplier,
+            iron: (food.iron || 0) * multiplier,
+            category: food.category,
+            meal,
+            confidence: 0.8 + Math.random() * 0.2
+          });
+        }
       });
-      }
     });
     if (suggestions.length === 0) {
       const closest = findClosestFood(description, [...keywordFoods.map(f => f.food), ...fullFoodBase]);
