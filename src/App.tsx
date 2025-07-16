@@ -13,7 +13,6 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
 import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory, syncAll } from './utils/api';
 import { computeDailyTargets } from './utils/nutrition';
-import { loadLocalFoodBase } from './utils/openFoodFacts';
 
 function App() {
   const defaultUser = {
@@ -162,10 +161,6 @@ function App() {
     }
   }, [user.theme]);
 
-  useEffect(() => {
-    const foods = loadLocalFoodBase();
-    console.log('First local foods', foods.slice(0, 5));
-  }, []);
 
   useEffect(() => {
     if (user.id) {
