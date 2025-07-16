@@ -228,6 +228,8 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     };
 
     setMessages(prev => [...prev, aiMessage]);
+    // Clear the input after the AI response is displayed
+    setInput('');
   } catch (e) {
     console.error('handleSendMessage error', e);
     if (!timedOut) {
