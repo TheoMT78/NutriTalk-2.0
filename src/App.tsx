@@ -34,10 +34,17 @@ function App() {
 
   const targets = computeDailyTargets(defaultUser);
 
-  const storedUser = localStorage.getItem('nutritalk-user') || sessionStorage.getItem('nutritalk-user');
-  const initialUser: User = storedUser
-    ? JSON.parse(storedUser)
-    : {
+  const storedUserRaw = localStorage.getItem('nutritalk-user') || sessionStorage.getItem('nutritalk-user');
+  console.log(storedUserRaw);
+  let parsedStored: User | null = null;
+  if (storedUserRaw && typeof storedUserRaw === 'string') {
+    try {
+      parsedStored = JSON.parse(storedUserRaw) as User;
+    } catch (err) {
+      console.error('Failed to parse stored user:', err);
+    }
+  }
+  const initialUser: User = parsedStored ?? {
         ...defaultUser,
         dailyCalories: targets.calories,
         dailyProtein: targets.protein,
