@@ -16,6 +16,7 @@ export interface OFFProduct {
 }
 
 import aliments from '../data/aliments.json';
+import { safeJson } from './safeJson';
 
 export function loadLocalFoodBase(): OFFProduct[] {
   return aliments as OFFProduct[];
@@ -28,8 +29,8 @@ export async function fetchProductByBarcode(barcode: string): Promise<OFFProduct
     if (!res.ok) {
       return null;
     }
-    const data = await res.json();
-    if (!data.product) return null;
+    const data = await safeJson(res);
+    if (!data || !data.product) return null;
     return data.product as OFFProduct;
   } catch (e) {
     console.error('fetchProductByBarcode error', e);
@@ -44,8 +45,8 @@ export async function searchProduct(query: string): Promise<OFFProduct[]> {
     if (!res.ok) {
       return [];
     }
-    const data = await res.json();
-    return (data.products as OFFProduct[]) || [];
+    const data = await safeJson(res);
+    return (data?.products as OFFProduct[]) || [];
   } catch (e) {
     console.error('searchProduct error', e);
     return [];

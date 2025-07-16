@@ -1,11 +1,16 @@
 import { User, DailyLog } from '../types';
+import { safeJson } from './safeJson';
 
-// Use the production backend by default, falling back to localhost during development
+// Use the production backend by default, falling back to localhost during development.
+// Some hosts may set `VITE_API_URL` to the string "undefined" so handle that case
+// to avoid requests like "undefined/api" which lead to empty responses.
+const envUrl = import.meta.env.VITE_API_URL;
 const API =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD
+  envUrl && envUrl !== 'undefined'
+    ? envUrl
+    : import.meta.env.PROD
     ? 'https://nutritalk-2-0.onrender.com/api'
-    : 'http://localhost:3001/api');
+    : 'http://localhost:3001/api';
 
 let authToken: string | null =
   localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -50,9 +55,14 @@ export async function login(email: string, password: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
+  }).catch(err => {
+    console.error('Network error during login', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Invalid credentials');
-  return res.json() as Promise<{ user: User; token: string }>;
+  const data = await safeJson<{ user: User; token: string }>(res);
+  if (!data) throw new Error('Invalid response from server');
+  return data as { user: User; token: string };
 }
 
 export async function register(user: User) {
@@ -60,20 +70,28 @@ export async function register(user: User) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user)
+  }).catch(err => {
+    console.error('Network error during registration', err);
+    throw err;
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
+    const err = (await safeJson<{ error?: string }>(res)) || {};
     throw new Error(err.error || 'Registration failed');
   }
-  return res.json() as Promise<{ user: User; token: string }>;
+  const data = await safeJson<{ user: User; token: string }>(res);
+  if (!data) throw new Error('Invalid response from server');
+  return data as { user: User; token: string };
 }
 
 export async function getDailyLog(userId: string, date: string) {
   const res = await fetch(`${API}/logs/${userId}/${date}`, {
     headers: authHeaders()
+  }).catch(err => {
+    console.error('Network error loading log', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Failed to load log');
-  return res.json();
+  return safeJson<DailyLog | null>(res);
 }
 
 export async function saveDailyLog(userId: string, date: string, log: DailyLog) {
@@ -81,9 +99,12 @@ export async function saveDailyLog(userId: string, date: string, log: DailyLog) 
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(log)
+  }).catch(err => {
+    console.error('Network error saving log', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Failed to save log');
-  return res.json();
+  return safeJson<{ success: true }>(res);
 }
 
 export async function updateProfile(userId: string, data: Partial<User>) {
@@ -91,25 +112,34 @@ export async function updateProfile(userId: string, data: Partial<User>) {
     method: 'PUT',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(data)
+  }).catch(err => {
+    console.error('Network error updating profile', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Failed to update profile');
-  return res.json();
+  return safeJson<User>(res);
 }
 
 export async function getProfile(userId: string) {
   const res = await fetch(`${API}/profile/${userId}`, {
     headers: authHeaders()
+  }).catch(err => {
+    console.error('Network error loading profile', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Failed to load profile');
-  return res.json();
+  return safeJson<User>(res);
 }
 
 export async function getWeightHistory(userId: string) {
   const res = await fetch(`${API}/weights/${userId}`, {
     headers: authHeaders()
+  }).catch(err => {
+    console.error('Network error loading weights', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Failed to load weights');
-  return res.json();
+  return safeJson<{ date: string; weight: number }[]>(res);
 }
 
 export async function saveWeightHistory(userId: string, history: { date: string; weight: number }[]) {
@@ -117,15 +147,21 @@ export async function saveWeightHistory(userId: string, history: { date: string;
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(history)
+  }).catch(err => {
+    console.error('Network error saving weights', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Failed to save weights');
-  return res.json();
+  return safeJson<{ success: true }>(res);
 }
 
 export async function syncAll(userId: string) {
   const res = await fetch(`${API}/sync/${userId}`, {
     headers: authHeaders()
+  }).catch(err => {
+    console.error('Network error during sync', err);
+    throw err;
   });
   if (!res.ok) throw new Error('Failed to sync');
-  return res.json();
+  return safeJson<{ profile: User; logs: unknown; weights: unknown }>(res);
 }

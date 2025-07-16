@@ -1,4 +1,5 @@
 import { searchProductFallback } from './openFoodFacts';
+import { safeJson } from './safeJson';
 
 function extractNutrition(text: string) {
   const cals = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kcal|calories?)/i);
@@ -26,8 +27,8 @@ async function searchPreferredSites(query: string): Promise<NutritionInfo | null
       const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(q)}&key=${gKey}&cx=${cseId}`;
       const res = await fetch(url);
       if (res.ok) {
-        const data = await res.json();
-        for (const item of data.items || []) {
+        const data = await safeJson<{ items?: { snippet?: string; title?: string }[] }>(res);
+        for (const item of data?.items || []) {
           const text: string = item.snippet || '';
           const title: string = item.title || query;
           const nut = extractNutrition(text);
@@ -78,7 +79,7 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
       const url = `https://api.edamam.com/api/food-database/v2/parser?ingr=${encodeURIComponent(query)}&app_id=${appId}&app_key=${appKey}`;
       const res = await fetch(url);
       if (res.ok) {
-        const data = await res.json();
+        const data = await safeJson(res);
         const food = data.parsed?.[0]?.food || data.hints?.[0]?.food;
         if (food) {
           return {
@@ -102,13 +103,13 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
       const searchUrl = `https://api.spoonacular.com/food/ingredients/search?query=${encodeURIComponent(query)}&apiKey=${spoonKey}&number=1`;
       const sRes = await fetch(searchUrl);
       if (sRes.ok) {
-        const sData = await sRes.json();
+        const sData = await safeJson(sRes);
         const item = sData.results?.[0];
         if (item && item.id) {
           const infoUrl = `https://api.spoonacular.com/food/ingredients/${item.id}/information?amount=100&unit=gram&apiKey=${spoonKey}`;
           const iRes = await fetch(infoUrl);
           if (iRes.ok) {
-            const info = await iRes.json();
+            const info = await safeJson(iRes);
             const get = (n: string) => {
               return info.nutrition?.nutrients?.find((x: {name: string; amount: number}) => x.name.toLowerCase() === n)?.amount;
             };
@@ -135,8 +136,8 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
       const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query + ' calories')}&key=${gKey}&cx=${cseId}`;
       const res = await fetch(url);
       if (res.ok) {
-        const data = await res.json();
-        for (const item of data.items || []) {
+        const data = await safeJson<{ items?: { snippet?: string; title?: string }[] }>(res);
+        for (const item of data?.items || []) {
           const text: string = item.snippet || '';
           const title: string = item.title || query;
           const nut = extractNutrition(text);
