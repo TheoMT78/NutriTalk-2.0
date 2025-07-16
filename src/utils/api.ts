@@ -69,3 +69,9 @@ export async function saveWeightHistory(userId: string, history: { date: string;
   if (!res.ok) throw new Error('Failed to save weights');
   return res.json();
 }
+
+export async function syncAll(userId: string) {
+  const res = await fetch(`${API}/sync/${userId}`);
+  if (!res.ok) throw new Error('Failed to sync');
+  return res.json();
+}

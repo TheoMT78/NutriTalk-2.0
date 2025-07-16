@@ -46,6 +46,8 @@ export interface DailyLog {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
+  totalFiber?: number;
+  totalVitaminC?: number;
   water: number;
   steps: number;
   targetCalories: number;

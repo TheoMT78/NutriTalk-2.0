@@ -12,7 +12,13 @@ const nameAliases: Record<string, string> = {
   'beurre cut kéké wet': 'beurre de cacahuete',
   'beurre cut': 'beurre de cacahuete',
   'keke wet': 'beurre de cacahuete',
-  'peanut butter': 'beurre de cacahuete'
+  'peanut butter': 'beurre de cacahuete',
+  'beurre cacahuete': 'beurre de cacahuete',
+  'beurre cacahuète': 'beurre de cacahuete',
+  'flocon avoine': 'flocons d\'avoine',
+  'flocon d\'avoine': 'flocons d\'avoine',
+  'farine avoine': 'farine d\'avoine',
+  'oatmeal': 'flocons d\'avoine'
 };
 
 const wordNumbers: Record<string, number> = {
@@ -80,7 +86,18 @@ export function parseFoods(text: string): ParsedFood[] {
 
   const pattern = /^(?<qty>\d+(?:[.,]\d+)?|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)?\s*(?<unit>kg|g|gr|grammes?|ml|cl|l|càs|cas|càc|cac|cuill(?:\w+)?\s+à\s+(?:soupe|café)|pi(?:e|é)ces?|tranches?|sachets?|pots?)?\s*(?:de\s+|d')?(?<name>.+)$/i;
 
-  const brandList = ['myprotein', 'auchan', 'carrefour', 'aldi', 'monoprix', 'casino'];
+  const brandList = [
+    'myprotein',
+    'auchan',
+    'carrefour',
+    'aldi',
+    'monoprix',
+    'casino',
+    'leader price',
+    'leclerc',
+    'intermarché',
+    'super u'
+  ];
 
   segments.forEach(seg => {
     const match = seg.match(pattern);

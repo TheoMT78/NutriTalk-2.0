@@ -11,7 +11,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
 import { computeDailyTargets } from './utils/nutrition';
 import { loadLocalFoodBase } from './utils/openFoodFacts';
-import { getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory } from './utils/api';
+import { getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory, syncAll } from './utils/api';
 
 function App() {
   const defaultUser = {
@@ -49,6 +49,8 @@ function App() {
     totalProtein: 0,
     totalCarbs: 0,
     totalFat: 0,
+    totalFiber: 0,
+    totalVitaminC: 0,
     water: 0,
     steps: 0,
     targetCalories: targets.calories,
@@ -84,13 +86,20 @@ function App() {
   useEffect(() => {
     if (user.id) {
       const today = new Date().toISOString().split('T')[0];
-      getProfile(user.id).then(setUser).catch(() => {});
-      getDailyLog(user.id, today).then(log => {
-        if (log) setDailyLog(log);
-      }).catch(() => {});
-      getWeightHistory(user.id).then(hist => {
-        if (hist) setWeightHistory(hist);
-      }).catch(() => {});
+      syncAll(user.id).then(data => {
+        if (data.profile) setUser(prev => ({ ...prev, ...data.profile }));
+        const log = data.logs?.find((l: { date: string; data: DailyLog }) => l.date === today);
+        if (log) setDailyLog(log.data);
+        if (data.weights) setWeightHistory(data.weights);
+      }).catch(() => {
+        getProfile(user.id).then(setUser).catch(() => {});
+        getDailyLog(user.id, today).then(log => {
+          if (log) setDailyLog(log);
+        }).catch(() => {});
+        getWeightHistory(user.id).then(hist => {
+          if (hist) setWeightHistory(hist);
+        }).catch(() => {});
+      });
     }
   }, [user.id, setUser, setDailyLog, setWeightHistory]);
 
@@ -126,7 +135,9 @@ function App() {
       totalCalories: dailyLog.totalCalories + entry.calories,
       totalProtein: dailyLog.totalProtein + entry.protein,
       totalCarbs: dailyLog.totalCarbs + entry.carbs,
-      totalFat: dailyLog.totalFat + entry.fat
+      totalFat: dailyLog.totalFat + entry.fat,
+      totalFiber: (dailyLog.totalFiber || 0) + (entry.fiber || 0),
+      totalVitaminC: (dailyLog.totalVitaminC || 0) + (entry.vitaminC || 0)
     };
 
     setDailyLog(updatedLog);
@@ -143,7 +154,9 @@ function App() {
       totalCalories: dailyLog.totalCalories - entryToRemove.calories,
       totalProtein: dailyLog.totalProtein - entryToRemove.protein,
       totalCarbs: dailyLog.totalCarbs - entryToRemove.carbs,
-      totalFat: dailyLog.totalFat - entryToRemove.fat
+      totalFat: dailyLog.totalFat - entryToRemove.fat,
+      totalFiber: (dailyLog.totalFiber || 0) - (entryToRemove.fiber || 0),
+      totalVitaminC: (dailyLog.totalVitaminC || 0) - (entryToRemove.vitaminC || 0)
     };
 
     setDailyLog(updatedLog);

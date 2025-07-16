@@ -206,12 +206,21 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
           calories: acc.calories + s.calories,
           protein: acc.protein + s.protein,
           carbs: acc.carbs + s.carbs,
-          fat: acc.fat + s.fat
+          fat: acc.fat + s.fat,
+          fiber: (acc.fiber || 0) + (s.fiber || 0),
+          vitaminC: (acc.vitaminC || 0) + (s.vitaminC || 0)
         }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitaminC: 0 }
       );
 
-      aiResponse += `\n\n**Total**: ${totals.calories.toFixed(0)} kcal - ${totals.protein.toFixed(1)}g protéines, ${totals.carbs.toFixed(1)}g glucides, ${totals.fat.toFixed(1)}g lipides.`;
+      aiResponse += `\n\n**Total**: ${totals.calories.toFixed(0)} kcal - ${totals.protein.toFixed(1)}g protéines, ${totals.carbs.toFixed(1)}g glucides, ${totals.fat.toFixed(1)}g lipides`;
+      if (totals.fiber) {
+        aiResponse += `, ${totals.fiber.toFixed(1)}g fibres`;
+      }
+      if (totals.vitaminC) {
+        aiResponse += `, ${totals.vitaminC.toFixed(0)}mg vitamine C`;
+      }
+      aiResponse += '.';
 
       aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
     } else {

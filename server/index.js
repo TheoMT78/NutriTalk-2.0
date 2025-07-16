@@ -109,6 +109,14 @@ app.post('/api/weights/:userId', async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/sync/:userId', async (req, res) => {
+  await db.read();
+  const user = db.data.users.find(u => u.id === req.params.userId);
+  const logs = db.data.logs.filter(l => l.userId === req.params.userId);
+  const weights = db.data.weights.find(w => w.userId === req.params.userId);
+  res.json({ profile: user, logs, weights: weights ? weights.data : [] });
+});
+
 const PORT = process.env.PORT || 3001;
 if (process.env.SSL_KEY && process.env.SSL_CERT) {
   const options = {

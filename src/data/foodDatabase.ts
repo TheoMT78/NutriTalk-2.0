@@ -149,5 +149,10 @@ export const foodDatabase: FoodItem[] = [
   { id: '126', name: 'Yaourt grec', calories: 59, protein: 10, carbs: 3.6, fat: 0.4, category: 'Produits laitiers', unit: '100g' },
   { id: '127', name: 'Tempeh', calories: 192, protein: 20, carbs: 7.6, fat: 11, category: 'Protéines', unit: '100g' },
   { id: '128', name: 'Seitan', calories: 370, protein: 75, carbs: 14, fat: 1.9, category: 'Protéines', unit: '100g' },
-  { id: '129', name: "Lait d'amande", calories: 17, protein: 0.6, carbs: 0.3, fat: 1.1, category: 'Boissons', unit: '100ml' }
+  { id: '129', name: "Lait d'amande", calories: 17, protein: 0.6, carbs: 0.3, fat: 1.1, category: 'Boissons', unit: '100ml' },
+  { id: '130', name: 'Farine de blé', calories: 364, protein: 10, carbs: 76, fat: 1, category: 'Féculents', unit: '100g' },
+  { id: '131', name: "Farine d'avoine", calories: 389, protein: 16.9, carbs: 66, fat: 6.9, category: 'Féculents', unit: '100g' },
+  { id: '132', name: "Flocons d'avoine", calories: 389, protein: 16.9, carbs: 66, fat: 6.9, category: 'Féculents', unit: '100g' },
+  { id: '133', name: "Flocons d'avoine goût cookie MyProtein", calories: 389, protein: 16.9, carbs: 66, fat: 6.9, category: 'Féculents', unit: '100g' },
+  { id: '134', name: 'Beurre de cacahuète Auchan', calories: 588, protein: 25, carbs: 20, fat: 50, category: 'Fruits secs', unit: '100g' },
 ];
