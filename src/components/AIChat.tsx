@@ -8,6 +8,15 @@ import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
 import { Recipe, FoodItem } from '../types';
 
+const normalize = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/œ/g, 'oe')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\p{P}\p{S}]/gu, '')
+    .trim();
+
 interface AIChatProps {
   onClose: () => void;
   onAddFood: (food: {
@@ -86,8 +95,10 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     const parsed = parseFoods(description);
 
     for (const food of parsed) {
-      const baseName = food.nom.toLowerCase();
-      const fromKeywords = keywordFoods.find(k => k.keywords.some(kw => baseName.includes(kw)));
+      const baseName = normalize(food.nom);
+      const fromKeywords = keywordFoods.find(k =>
+        k.keywords.some(kw => baseName.includes(normalize(kw)))
+      );
       let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
       if (!info) {
         const closest = findClosestFood(baseName, fullFoodBase);
@@ -103,7 +114,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       const baseAmount = parseFloat(info.unit) || 100;
       let grams = food.quantite;
       if (food.unite === "unite") {
-        const w = unitWeights[baseName] || baseAmount;
+        const w = unitWeights[normalize(baseName)] || baseAmount;
         grams = food.quantite * w;
       } else if (food.unite === "cas") {
         grams = food.quantite * 15;

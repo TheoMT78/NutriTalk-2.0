@@ -64,6 +64,7 @@ Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
   Vous pouvez l'enrichir en exécutant `npm run update-food-db` qui télécharge
   plusieurs milliers d'aliments supplémentaires depuis OpenFoodFacts.
 - Ajout de nouveaux aliments comme la patate douce et le kiwi jaune pour améliorer la reconnaissance hors ligne.
+- Les poids par pièce (oeuf, kiwi...) sont normalisés via `unitWeights.ts` pour convertir correctement "1 œuf" ou "1 egg" en grammes.
 - Historique enrichi avec graphiques du poids et du nombre de pas.
 - Historique d'exemple d'un an pour visualiser immédiatement les graphiques.
 - Historique vide par défaut et calendrier plus large avec cases réduites.
