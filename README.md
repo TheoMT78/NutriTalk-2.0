@@ -3,6 +3,19 @@
 
 Cette application React permet de suivre votre alimentation et vos objectifs nutritionnels.
 
+## Installation
+
+```bash
+npm install
+```
+
+Le script `postinstall` installe aussi les dépendances du dossier `server`. Démarrez ensuite l'API avec :
+
+```bash
+(cd server && npm start)
+```
+
+
 ## Nouveautés
 
 - Recherche d'aliments en ligne via OpenFoodFacts lorsque la base interne ne suffit pas.
