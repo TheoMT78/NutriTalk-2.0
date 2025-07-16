@@ -57,8 +57,11 @@ export async function register(user: User) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user)
   });
-  if (!res.ok) throw new Error('Registration failed');
-  return res.json();
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Registration failed');
+  }
+  return res.json() as Promise<{ user: User; token: string }>;
 }
 
 export async function getDailyLog(userId: string, date: string) {

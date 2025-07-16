@@ -17,15 +17,17 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
     e.preventDefault();
     try {
       if (isSignup) {
-        const newUser = await register({ ...user, email, password });
+        const { user: newUser, token } = await register({ ...user, email, password });
+        setAuthToken(token, rememberMe);
         onLogin(newUser, rememberMe);
       } else {
         const { user: loggedUser, token } = await login(email, password);
         setAuthToken(token, rememberMe);
         onLogin(loggedUser, rememberMe);
       }
-    } catch {
-      alert('Email ou mot de passe incorrect');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur de connexion';
+      alert(msg);
     }
   };
 
@@ -53,6 +55,13 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none"
           />
+          <button
+            type="button"
+            onClick={() => alert('Fonctionnalité à venir')}
+            className="text-xs text-blue-400 underline mt-1"
+          >
+            Mot de passe oublié ?
+          </button>
         </div>
         <label className="flex items-center space-x-2 text-sm">
           <input

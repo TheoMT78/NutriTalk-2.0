@@ -47,8 +47,9 @@ app.post('/api/register', async (req, res) => {
   const newUser = { ...user, password: hashed, id: uuid() };
   db.data.users.push(newUser);
   await db.write();
+  const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
   const { password, ...safe } = newUser;
-  res.json(safe);
+  res.json({ user: safe, token });
 });
 
 app.post('/api/login', async (req, res) => {
