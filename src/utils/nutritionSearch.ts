@@ -14,8 +14,8 @@ function extractNutrition(text: string) {
 }
 
 async function searchMyProtein(query: string): Promise<NutritionInfo | null> {
-  const gKey = process.env.GOOGLE_API_KEY || 'AIzaSyBF8fDAPG6jUpfmcGs73mceMeFftHTPIt4';
-  const cseId = process.env.GOOGLE_CSE_ID || '05e79959de733471a';
+  const gKey = process.env.GOOGLE_API_KEY;
+  const cseId = process.env.GOOGLE_CSE_ID;
   if (!gKey || !cseId) return null;
   try {
     const q = `site:myprotein.com ${query} valeurs nutritionnelles`;
@@ -127,8 +127,8 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
     }
   }
 
-  const gKey = process.env.GOOGLE_API_KEY || 'AIzaSyBF8fDAPG6jUpfmcGs73mceMeFftHTPIt4';
-  const cseId = process.env.GOOGLE_CSE_ID || '05e79959de733471a';
+  const gKey = process.env.GOOGLE_API_KEY;
+  const cseId = process.env.GOOGLE_CSE_ID;
   if (gKey && cseId) {
     try {
       const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query + ' calories')}&key=${gKey}&cx=${cseId}`;

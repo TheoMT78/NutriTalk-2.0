@@ -92,9 +92,10 @@ Pour obtenir des informations plus précises lorsque la base locale échoue,
 l'application peut également interroger Edamam, Spoonacular ou
 Google Custom Search (utilisé notamment pour les produits MyProtein).
 Renseignez les clés correspondantes dans `.env` pour activer ces services.
-Par défaut, l'application utilisera la clé et l'identifiant suivants pour Google Custom Search :
+Configurez également Google Custom Search si vous souhaitez un dernier recours
+en définissant les variables suivantes dans `.env` :
 
 ```bash
-GOOGLE_API_KEY=AIzaSyBF8fDAPG6jUpfmcGs73mceMeFftHTPIt4
-GOOGLE_CSE_ID=05e79959de733471a
+GOOGLE_API_KEY=
+GOOGLE_CSE_ID=
 ```

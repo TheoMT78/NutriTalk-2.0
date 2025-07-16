@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { login, register } from '../utils/api';
+import { login, register, setAuthToken } from '../utils/api';
 
 interface LoginProps {
   user: User;
@@ -11,6 +11,7 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignup, setIsSignup] = useState(!user.password);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,8 +20,9 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
         const newUser = await register({ ...user, email, password });
         onLogin(newUser);
       } else {
-        const logged = await login(email, password);
-        onLogin(logged);
+        const { user: loggedUser, token } = await login(email, password);
+        setAuthToken(token, rememberMe);
+        onLogin(loggedUser);
       }
     } catch {
       alert('Email ou mot de passe incorrect');
@@ -52,6 +54,15 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
             className="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none"
           />
         </div>
+        <label className="flex items-center space-x-2 text-sm">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="form-checkbox"
+          />
+          <span>Se souvenir de moi</span>
+        </label>
         <button
           type="submit"
           className="w-full py-2 bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"

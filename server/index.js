@@ -8,10 +8,27 @@ import { v4 as uuid } from 'uuid';
 import bcrypt from 'bcryptjs';
 import https from 'https';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'nutritalk-secret';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use('/api', (req, res, next) => {
+  if (req.path === '/login' || req.path === '/register') return next();
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,11 +71,13 @@ app.post('/api/login', async (req, res) => {
   }
 
   if (!passwordValid) return res.status(401).json({ error: 'Invalid credentials' });
+  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
   const { password: pw, ...safe } = user;
-  res.json(safe);
+  res.json({ user: safe, token });
 });
 
 app.get('/api/profile/:id', async (req, res) => {
+  if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const user = db.data.users.find(u => u.id === req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
@@ -67,6 +86,7 @@ app.get('/api/profile/:id', async (req, res) => {
 });
 
 app.put('/api/profile/:id', async (req, res) => {
+  if (req.userId !== req.params.id) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const idx = db.data.users.findIndex(u => u.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'User not found' });
@@ -77,6 +97,7 @@ app.put('/api/profile/:id', async (req, res) => {
 });
 
 app.get('/api/logs/:userId/:date', async (req, res) => {
+  if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const { userId, date } = req.params;
   const log = db.data.logs.find(l => l.userId === userId && l.date === date);
@@ -84,6 +105,7 @@ app.get('/api/logs/:userId/:date', async (req, res) => {
 });
 
 app.post('/api/logs/:userId/:date', async (req, res) => {
+  if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const { userId, date } = req.params;
   const idx = db.data.logs.findIndex(l => l.userId === userId && l.date === date);
@@ -94,12 +116,14 @@ app.post('/api/logs/:userId/:date', async (req, res) => {
 });
 
 app.get('/api/weights/:userId', async (req, res) => {
+  if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const weights = db.data.weights.find(w => w.userId === req.params.userId);
   res.json(weights ? weights.data : []);
 });
 
 app.post('/api/weights/:userId', async (req, res) => {
+  if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const { userId } = req.params;
   const idx = db.data.weights.findIndex(w => w.userId === userId);
@@ -110,6 +134,7 @@ app.post('/api/weights/:userId', async (req, res) => {
 });
 
 app.get('/api/sync/:userId', async (req, res) => {
+  if (req.userId !== req.params.userId) return res.status(403).json({ error: 'Forbidden' });
   await db.read();
   const user = db.data.users.find(u => u.id === req.params.userId);
   const logs = db.data.logs.filter(l => l.userId === req.params.userId);
