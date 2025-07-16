@@ -364,17 +364,29 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     let aiResponse = '';
     if (suggestions.length > 0) {
       aiResponse = `J'ai analysé votre repas et identifié ${suggestions.length} aliment(s). Voici ce que j'ai trouvé :`;
-      
+
       suggestions.forEach((suggestion, index) => {
         const totalCalories = suggestion.calories.toFixed(0);
         const displayUnit = suggestion.unit.replace(/^100/, '');
-        aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})
-        - ${totalCalories} kcal
-        - Protéines: ${suggestion.protein.toFixed(1)}g
-        - Glucides: ${suggestion.carbs.toFixed(1)}g
-        - Lipides: ${suggestion.fat.toFixed(1)}g`;
+        aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})` +
+          `\n        - ${totalCalories} kcal` +
+          `\n        - Protéines: ${suggestion.protein.toFixed(1)}g` +
+          `\n        - Glucides: ${suggestion.carbs.toFixed(1)}g` +
+          `\n        - Lipides: ${suggestion.fat.toFixed(1)}g`;
       });
-      
+
+      const totals = suggestions.reduce(
+        (acc, s) => ({
+          calories: acc.calories + s.calories,
+          protein: acc.protein + s.protein,
+          carbs: acc.carbs + s.carbs,
+          fat: acc.fat + s.fat
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+
+      aiResponse += `\n\n**Total**: ${totals.calories.toFixed(0)} kcal - ${totals.protein.toFixed(1)}g protéines, ${totals.carbs.toFixed(1)}g glucides, ${totals.fat.toFixed(1)}g lipides.`;
+
       aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
     } else {
       aiResponse = "Je n'ai pas pu identifier d'aliments spécifiques dans votre description. Pourriez-vous être plus précis ? Par exemple : 'J'ai mangé 150g de riz avec 100g de poulet grillé et des légumes'.";
