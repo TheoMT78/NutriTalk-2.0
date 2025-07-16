@@ -56,7 +56,11 @@ export async function searchProductFallback(query: string): Promise<OFFProduct[]
   const terms = query.split(/\s+/).filter(Boolean);
   const synonyms: Record<string, string[]> = {
     farine: ['flour'],
-    flour: ['farine']
+    flour: ['farine'],
+    beurre: ['butter'],
+    butter: ['beurre'],
+    riz: ['rice'],
+    rice: ['riz']
   };
   for (const term of terms) {
     results = await searchProduct(term);

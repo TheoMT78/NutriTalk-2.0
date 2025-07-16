@@ -105,7 +105,11 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       { keywords: ['saumon', 'salmon'], food: { name: 'Saumon', calories: 208, protein: 22, carbs: 0, fat: 13, category: 'Protéines', unit: '100g' }},
       { keywords: ['brocoli', 'broccoli'], food: { name: 'Brocolis', calories: 34, protein: 2.8, carbs: 7, fat: 0.4, category: 'Légumes', unit: '100g' }},
       { keywords: ['farine', 'farine de blé', 'flour', 'farina'], food: { name: 'Farine de blé', calories: 364, protein: 10, carbs: 76, fat: 1, category: 'Féculents', unit: '100g' }},
-    ];
+      { keywords: ['beurre', 'butter'], food: { name: 'Beurre', calories: 717, protein: 0.9, carbs: 0.1, fat: 81, category: 'Matières grasses', unit: '100g' }},
+      { keywords: ['tofu'], food: { name: 'Tofu ferme', calories: 126, protein: 13, carbs: 3, fat: 8, category: 'Protéines', unit: '100g' }},
+      { keywords: ['tempeh'], food: { name: 'Tempeh', calories: 192, protein: 20, carbs: 7.6, fat: 11, category: 'Protéines', unit: '100g' }},
+      { keywords: ['seitan'], food: { name: 'Seitan', calories: 370, protein: 75, carbs: 14, fat: 1.9, category: 'Protéines', unit: '100g' }},
+   ];
 
     // Détection des quantités
     const extractQuantity = (text: string, keyword: string) => {
