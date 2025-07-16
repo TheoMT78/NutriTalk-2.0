@@ -236,7 +236,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
 
       aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
     } else {
-      aiResponse = "Je n'ai pas pu identifier d'aliments spécifiques dans votre description. Pourriez-vous être plus précis ? Par exemple : 'J'ai mangé 150g de riz avec 100g de poulet grillé et des légumes'.";
+      aiResponse = "Aucun résultat fiable trouvé pour votre message.";
     }
 
     const aiMessage: Message = {
