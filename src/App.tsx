@@ -34,14 +34,16 @@ function App() {
 
   const targets = computeDailyTargets(defaultUser);
 
-  const storedUserRaw = localStorage.getItem('nutritalk-user') || sessionStorage.getItem('nutritalk-user');
+  const storedUserRaw =
+    localStorage.getItem('nutritalk-user') ||
+    sessionStorage.getItem('nutritalk-user');
   console.log(storedUserRaw);
   let parsedStored: User | null = null;
-  if (storedUserRaw && typeof storedUserRaw === 'string') {
+  if (storedUserRaw && storedUserRaw !== 'undefined') {
     try {
       parsedStored = JSON.parse(storedUserRaw) as User;
     } catch (err) {
-      console.error('Failed to parse stored user:', err);
+      console.error('Failed to parse stored user:', err, storedUserRaw);
     }
   }
   const initialUser: User = parsedStored ?? {
@@ -60,7 +62,13 @@ function App() {
     userRef.current = user;
   }, [user]);
 
-  const persistUser = React.useCallback((u: User) => {
+  const persistUser = React.useCallback((u: User | null | undefined) => {
+    if (!u) {
+      console.warn('persistUser called with empty value');
+      localStorage.removeItem('nutritalk-user');
+      sessionStorage.removeItem('nutritalk-user');
+      return;
+    }
     const str = JSON.stringify(u);
     if (rememberRef.current) {
       localStorage.setItem('nutritalk-user', str);
