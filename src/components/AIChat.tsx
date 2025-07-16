@@ -4,6 +4,7 @@ import { searchNutrition } from '../utils/nutritionSearch';
 import { findClosestFood } from '../utils/findClosestFood';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { keywordFoods } from '../data/keywordFoods';
+import { unitWeights } from '../data/unitWeights';
 import { parseFoods } from '../utils/parseFoods';
 import { Recipe, FoodItem } from '../types';
 
@@ -82,14 +83,6 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     else if (lower.includes("dîner") || lower.includes("soir")) meal = "dîner";
     else if (lower.includes("collation") || lower.includes("goûter")) meal = "collation";
 
-    const portionWeights: Record<string, number> = {
-      "oeuf": 55,
-      "oeufs": 55,
-      "kiwi": 75,
-      "kiwi jaune": 100,
-      "banane": 120,
-      "bananes": 120
-    };
     const parsed = parseFoods(description);
 
     for (const food of parsed) {
@@ -110,7 +103,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       const baseAmount = parseFloat(info.unit) || 100;
       let grams = food.quantite;
       if (food.unite === "unite") {
-        const w = portionWeights[baseName] || baseAmount;
+        const w = unitWeights[baseName] || baseAmount;
         grams = food.quantite * w;
       } else if (food.unite === "cas") {
         grams = food.quantite * 15;
