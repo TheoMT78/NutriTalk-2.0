@@ -3,7 +3,8 @@ import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
 import { searchNutrition } from '../utils/nutritionSearch';
 import { findClosestFood } from '../utils/findClosestFood';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
-import { Recipe } from '../types';
+import { parseFoods } from '../utils/parseFoods';
+import { Recipe, FoodItem } from '../types';
 
 interface AIChatProps {
   onClose: () => void;
@@ -74,255 +75,59 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
 
   const analyzeFood = async (description: string): Promise<FoodSuggestion[]> => {
     const suggestions: FoodSuggestion[] = [];
-    const lowerDescription = description.toLowerCase();
-    
-    // Détection du repas
-    let meal: 'petit-déjeuner' | 'déjeuner' | 'dîner' | 'collation' = 'déjeuner';
-    if (lowerDescription.includes('petit-déjeuner') || lowerDescription.includes('matin')) {
-      meal = 'petit-déjeuner';
-    } else if (lowerDescription.includes('dîner') || lowerDescription.includes('soir')) {
-      meal = 'dîner';
-    } else if (lowerDescription.includes('collation') || lowerDescription.includes('goûter')) {
-      meal = 'collation';
-    }
+    const lower = description.toLowerCase();
+    let meal: "petit-déjeuner" | "déjeuner" | "dîner" | "collation" = "déjeuner";
+    if (lower.includes("petit-déjeuner") || lower.includes("matin")) meal = "petit-déjeuner";
+    else if (lower.includes("dîner") || lower.includes("soir")) meal = "dîner";
+    else if (lower.includes("collation") || lower.includes("goûter")) meal = "collation";
 
-    // Base de données simplifiée pour la reconnaissance
-    const keywordFoods = [
-      { keywords: ['pâtes', 'pasta', 'spaghetti', 'tagliatelle'], food: { name: 'Pâtes cuites', calories: 131, protein: 5, carbs: 25, fat: 1.1, category: 'Féculents', unit: '100g' }},
-      { keywords: ['riz', 'rice'], food: { name: 'Riz blanc cuit', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, category: 'Féculents', unit: '100g' }},
-      { keywords: ['poulet', 'chicken'], food: { name: 'Blanc de poulet', calories: 165, protein: 31, carbs: 0, fat: 3.6, category: 'Protéines', unit: '100g' }},
-      { keywords: ['œuf', 'oeuf', 'egg'], food: { name: 'Œufs', calories: 155, protein: 13, carbs: 1.1, fat: 11, category: 'Protéines', unit: '100g' }},
-      { keywords: ['avocat', 'avocado'], food: { name: 'Avocat', calories: 160, protein: 2, carbs: 9, fat: 15, category: 'Fruits', unit: '100g' }},
-      { keywords: ['pain', 'bread'], food: { name: 'Pain complet', calories: 247, protein: 13, carbs: 41, fat: 4.2, category: 'Féculents', unit: '100g' }},
-      { keywords: ['tomate', 'tomato'], food: { name: 'Tomates', calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, category: 'Légumes', unit: '100g' }},
-      { keywords: ['salade', 'salad'], food: { name: 'Salade verte', calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2, category: 'Légumes', unit: '100g' }},
-      { keywords: ['banane', 'banana'], food: { name: 'Banane', calories: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, vitaminC: 15, category: 'Fruits', unit: '100g' }},
-      { keywords: ['kiwi jaune', 'kiwi gold', 'kiwi', 'sungold'], food: { name: 'Kiwi jaune', calories: 60, protein: 1.1, carbs: 15, fat: 0.5, fiber: 2, vitaminC: 140, category: 'Fruits', unit: '100g' }},
-      { keywords: ['pomme', 'apple'], food: { name: 'Pomme', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, fiber: 2.4, vitaminC: 7, category: 'Fruits', unit: '100g' }},
-      { keywords: ['yaourt', 'yogurt'], food: { name: 'Yaourt nature 0%', calories: 56, protein: 10, carbs: 4, fat: 0.1, category: 'Produits laitiers', unit: '100g' }},
-      { keywords: ['fromage', 'cheese'], food: { name: 'Fromage', calories: 280, protein: 22, carbs: 2.2, fat: 22, category: 'Produits laitiers', unit: '100g' }},
-      { keywords: ['bœuf', 'beef'], food: { name: 'Bœuf haché 5%', calories: 137, protein: 20, carbs: 0, fat: 5, category: 'Protéines', unit: '100g' }},
-      { keywords: ['saumon', 'salmon'], food: { name: 'Saumon', calories: 208, protein: 22, carbs: 0, fat: 13, category: 'Protéines', unit: '100g' }},
-      { keywords: ['brocoli', 'broccoli'], food: { name: 'Brocolis', calories: 34, protein: 2.8, carbs: 7, fat: 0.4, category: 'Légumes', unit: '100g' }},
-      { keywords: ['farine', 'farine de blé', 'flour', 'farina'], food: { name: 'Farine de blé', calories: 364, protein: 10, carbs: 76, fat: 1, category: 'Féculents', unit: '100g' }},
-      { keywords: ['beurre', 'butter'], food: { name: 'Beurre', calories: 717, protein: 0.9, carbs: 0.1, fat: 81, category: 'Matières grasses', unit: '100g' }},
-      { keywords: ['tofu'], food: { name: 'Tofu ferme', calories: 126, protein: 13, carbs: 3, fat: 8, category: 'Protéines', unit: '100g' }},
-      { keywords: ['tempeh'], food: { name: 'Tempeh', calories: 192, protein: 20, carbs: 7.6, fat: 11, category: 'Protéines', unit: '100g' }},
-      { keywords: ['seitan'], food: { name: 'Seitan', calories: 370, protein: 75, carbs: 14, fat: 1.9, category: 'Protéines', unit: '100g' }},
-   ];
+    const portionWeights: Record<string, number> = { "oeuf": 60, "oeufs": 60, "kiwi": 75, "kiwi jaune": 100 };
+    const parsed = parseFoods(description);
 
-    const wordsMap: Record<string, number> = {
-      un: 1,
-      une: 1,
-      deux: 2,
-      trois: 3,
-      quatre: 4,
-      cinq: 5,
-      six: 6,
-      sept: 7,
-      huit: 8,
-      neuf: 9,
-      dix: 10
-    };
-
-    interface Qty {
-      value: number;
-      unit: 'g' | 'ml' | 'unit';
-    }
-
-    const parseToken = (t: string): Qty | null => {
-      const cleaned = t.toLowerCase();
-      if (wordsMap[cleaned] !== undefined) return { value: wordsMap[cleaned], unit: 'unit' };
-      const num = cleaned.match(/^(\d+(?:[.,]\d+)?)(kg|g|gr|grammes?|ml|cl|l)?$/);
-      if (num) {
-        let value = parseFloat(num[1].replace(',', '.'));
-        const u = num[2] || 'g';
-        if (u === 'kg') value *= 1000;
-        if (u === 'cl') value *= 10;
-        if (u === 'l') value *= 1000;
-        const unit = u.includes('ml') || u === 'cl' || u === 'l' ? 'ml' : 'g';
-        return { value, unit };
+    for (const food of parsed) {
+      const baseName = food.nom.toLowerCase();
+      const fromKeywords = keywordFoods.find(k => k.keywords.some(kw => baseName.includes(kw)));
+      let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
+      if (!info) {
+        const closest = findClosestFood(baseName, fullFoodBase);
+        if (closest) info = closest;
       }
-      return null;
-    };
-
-    const extractQuantityNear = (tokens: string[], idx: number): Qty => {
-      for (let i = idx - 1; i >= 0 && i >= idx - 3; i--) {
-        const q = parseToken(tokens[i]);
-        if (q !== null) return q;
-      }
-      for (let i = idx + 1; i < tokens.length && i <= idx + 3; i++) {
-        const q = parseToken(tokens[i]);
-        if (q !== null) return q;
-      }
-      return { value: 100, unit: 'g' };
-    };
-
-    const portionWeights: Record<string, number> = {
-      'œufs': 60,
-      'oeufs': 60,
-      'kiwi jaune': 100,
-      'kiwi': 75
-    };
-
-    const tokens = lowerDescription
-      .replace(/[,.!?;]/g, ' ')
-      .split(/\s+/)
-      .filter(Boolean);
-
-    const used = new Set<number>();
-    tokens.forEach((word, idx) => {
-      const base = word.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      keywordFoods.forEach(({ keywords, food }) => {
-        if (keywords.some(k => base === k || base === `${k}s`)) {
-          if (used.has(idx)) return;
-          const qty = extractQuantityNear(tokens, idx);
-          used.add(idx);
-          const baseAmount = parseFloat(food.unit) || 100;
-          let grams = qty.value;
-          let displayUnit = food.unit;
-          if (qty.unit === 'unit') {
-            const w = portionWeights[food.name.toLowerCase()] || baseAmount;
-            grams = qty.value * w;
-            displayUnit = qty.value > 1 ? 'unités' : 'unité';
-          }
-          const multiplier = grams / baseAmount;
-          suggestions.push({
-            name: food.name,
-            quantity: qty.value,
-            unit: displayUnit,
-            calories: food.calories * multiplier,
-            protein: food.protein * multiplier,
-            carbs: food.carbs * multiplier,
-            fat: food.fat * multiplier,
-            fiber: (food.fiber || 0) * multiplier,
-            vitaminA: (food.vitaminA || 0) * multiplier,
-            vitaminC: (food.vitaminC || 0) * multiplier,
-            calcium: (food.calcium || 0) * multiplier,
-            iron: (food.iron || 0) * multiplier,
-            category: food.category,
-            meal,
-            confidence: 0.8 + Math.random() * 0.2
-          });
-        }
-      });
-    });
-
-    // Recherche approximative ou via OpenFoodFacts pour les mots non reconnus
-    for (let i = 0; i < tokens.length; i++) {
-      if (used.has(i)) continue;
-      const clean = tokens[i].replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]/g, '');
-      if (clean.length < 3) continue;
-      const closest = findClosestFood(clean, fullFoodBase);
-      if (closest && !suggestions.some(s => s.name === closest.name)) {
-        const q = extractQuantityNear(tokens, i);
-        const baseAmount = parseFloat(closest.unit) || 100;
-        let grams = q.value;
-        let displayUnit = closest.unit;
-        if (q.unit === 'unit') {
-          const w = portionWeights[closest.name.toLowerCase()] || baseAmount;
-          grams = q.value * w;
-          displayUnit = q.value > 1 ? 'unités' : 'unité';
-        }
-        const mult = grams / baseAmount;
-        suggestions.push({
-          name: closest.name,
-          quantity: q.value,
-          unit: displayUnit,
-          calories: closest.calories * mult,
-          protein: closest.protein * mult,
-          carbs: closest.carbs * mult,
-          fat: closest.fat * mult,
-          fiber: (closest.fiber || 0) * mult,
-          vitaminA: closest.vitaminA,
-          vitaminC: closest.vitaminC,
-          calcium: closest.calcium,
-          iron: closest.iron,
-          category: closest.category,
-          meal,
-          confidence: 0.6
-        });
-        used.add(i);
-      } else {
-        const ext = await searchNutrition(clean);
+      if (!info) {
+        const ext = await searchNutrition(`${food.nom} ${food.marque || ''}`.trim());
         if (ext) {
-          const q = extractQuantityNear(tokens, i);
-          const baseAmount = parseFloat(ext.unit || '100') || 100;
-          let grams = q.value;
-          let displayUnit = ext.unit || 'g';
-          if (q.unit === 'unit') {
-            const w = portionWeights[ext.name.toLowerCase()] || baseAmount;
-            grams = q.value * w;
-            displayUnit = q.value > 1 ? 'unités' : 'unité';
-          }
-          const mult = grams / baseAmount;
-          suggestions.push({
-            name: ext.name,
-            quantity: q.value,
-            unit: displayUnit,
-            calories: (ext.calories || 0) * mult,
-            protein: (ext.protein || 0) * mult,
-            carbs: (ext.carbs || 0) * mult,
-            fat: (ext.fat || 0) * mult,
-            fiber: 0,
-            vitaminA: 0,
-            vitaminC: 0,
-            calcium: 0,
-            iron: 0,
-            category: 'Importé',
-            meal,
-            confidence: 0.5
-          });
-          used.add(i);
+          info = { name: ext.name, calories: ext.calories || 0, protein: ext.protein || 0, carbs: ext.carbs || 0, fat: ext.fat || 0, category: 'Importé', unit: ext.unit || '100g' } as FoodItem;
         }
       }
-    }
-    if (suggestions.length === 0) {
-      const closest = findClosestFood(description, [...keywordFoods.map(f => f.food), ...fullFoodBase]);
-      if (closest) {
-        suggestions.push({
-          name: closest.name,
-          quantity: 100,
-          unit: closest.unit,
-          calories: closest.calories,
-          protein: closest.protein,
-          carbs: closest.carbs,
-          fat: closest.fat,
-          fiber: closest.fiber,
-          vitaminA: closest.vitaminA,
-          vitaminC: closest.vitaminC,
-          calcium: closest.calcium,
-          iron: closest.iron,
-          category: closest.category,
-          meal,
-          confidence: 0.5,
-        });
+      if (!info) continue;
+      const baseAmount = parseFloat(info.unit) || 100;
+      let grams = food.quantite;
+      if (food.unite === "unite") {
+        const w = portionWeights[baseName] || baseAmount;
+        grams = food.quantite * w;
+      } else if (food.unite === "cas") {
+        grams = food.quantite * 15;
+      } else if (food.unite === "cac") {
+        grams = food.quantite * 5;
       }
+      const mult = grams / baseAmount;
+      suggestions.push({
+        name: info.name,
+        quantity: food.quantite,
+        unit: food.unite,
+        calories: info.calories * mult,
+        protein: info.protein * mult,
+        carbs: info.carbs * mult,
+        fat: info.fat * mult,
+        fiber: info.fiber ? info.fiber * mult : 0,
+        vitaminA: info.vitaminA ? info.vitaminA * mult : 0,
+        vitaminC: info.vitaminC ? info.vitaminC * mult : 0,
+        calcium: info.calcium ? info.calcium * mult : 0,
+        iron: info.iron ? info.iron * mult : 0,
+        category: info.category,
+        meal,
+        confidence: fromKeywords ? 0.9 : info.category === "Importé" ? 0.5 : 0.6
+      });
     }
-
-    if (suggestions.length === 0) {
-      const ext = await searchNutrition(description);
-      if (ext) {
-        suggestions.push({
-          name: ext.name,
-          quantity: 100,
-          unit: ext.unit || 'g',
-          calories: ext.calories || 0,
-          protein: ext.protein || 0,
-          carbs: ext.carbs || 0,
-          fat: ext.fat || 0,
-          fiber: 0,
-          vitaminA: 0,
-          vitaminC: 0,
-          calcium: 0,
-          iron: 0,
-          category: 'Importé',
-          meal,
-          confidence: 0.6
-        });
-      }
-    }
-
     return suggestions;
   };
 

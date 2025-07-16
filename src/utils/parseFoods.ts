@@ -1,0 +1,94 @@
+export interface ParsedFood {
+  nom: string;
+  quantite: number;
+  unite: string;
+  marque?: string;
+  gout?: string;
+}
+
+const wordNumbers: Record<string, number> = {
+  un: 1,
+  une: 1,
+  deux: 2,
+  trois: 3,
+  quatre: 4,
+  cinq: 5,
+  six: 6,
+  sept: 7,
+  huit: 8,
+  neuf: 9,
+  dix: 10
+};
+
+function normalizeUnit(u?: string): string {
+  if (!u) return 'unite';
+  const unit = u.toLowerCase();
+  if (['kg'].includes(unit)) return 'g';
+  if (['g', 'gr', 'gramme', 'grammes'].includes(unit)) return 'g';
+  if (['l'].includes(unit)) return 'ml';
+  if (['ml', 'cl'].includes(unit)) return 'ml';
+  if (/soupe/.test(unit) || ['cas', 'càs'].includes(unit)) return 'cas';
+  if (/cafe/.test(unit) || ['cac', 'càc'].includes(unit)) return 'cac';
+  if (/piece/.test(unit) || /tranche/.test(unit) || /sachet/.test(unit) || /pot/.test(unit)) return 'unite';
+  return unit;
+}
+
+function capitalize(str: string): string {
+  return str
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+export function parseFoods(text: string): ParsedFood[] {
+  const segments = text
+    .replace(/\bavec\b/gi, ',')
+    .replace(/\bet\b/gi, ',')
+    .split(/[,;]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const foods: ParsedFood[] = [];
+
+  const pattern = /^(?<qty>\d+(?:[.,]\d+)?|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)?\s*(?<unit>kg|g|gr|grammes?|ml|cl|l|càs|cas|càc|cac|cuill(?:\w+)?\s+à\s+(?:soupe|café)|pi(?:e|é)ces?|tranches?|sachets?|pots?)?\s*(?:de\s+|d')?(?<name>.+)$/i;
+
+  const brandList = ['myprotein', 'auchan', 'carrefour', 'aldi', 'monoprix', 'casino'];
+
+  segments.forEach(seg => {
+    const match = seg.match(pattern);
+    if (!match || !match.groups) return;
+    const groups = match.groups as Record<string, string>;
+    const rawQty = groups.qty ? groups.qty.toLowerCase() : '1';
+    const quantity = wordNumbers[rawQty] || parseFloat(rawQty.replace(',', '.')) || 1;
+    const unitNorm = normalizeUnit(groups.unit);
+    let name = groups.name.trim();
+    let marque: string | undefined;
+    let gout: string | undefined;
+
+    const flavorMatch = name.match(/go[uû]t\s+([^,]+)/i);
+    if (flavorMatch) {
+      gout = flavorMatch[1].trim();
+      name = name.replace(flavorMatch[0], '').trim();
+    }
+
+    const brandMatch = name.match(/(?:marque|brand)\s+([^,]+)/i);
+    if (brandMatch) {
+      marque = brandMatch[1].trim();
+      name = name.replace(brandMatch[0], '').trim();
+    } else {
+      for (const b of brandList) {
+        const bReg = new RegExp(`\\b${b}\\b`, 'i');
+        if (bReg.test(name)) {
+          marque = capitalize(b);
+          name = name.replace(bReg, '').trim();
+          break;
+        }
+      }
+    }
+
+    foods.push({ nom: capitalize(name), quantite: quantity, unite: unitNorm, marque, gout });
+  });
+
+  return foods;
+}
+
