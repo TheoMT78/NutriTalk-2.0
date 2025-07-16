@@ -6,6 +6,15 @@ export interface ParsedFood {
   gout?: string;
 }
 
+// Some common mistakes or phonetic variants to map back to real foods
+const nameAliases: Record<string, string> = {
+  'beurre cut keke wet': 'beurre de cacahuete',
+  'beurre cut kéké wet': 'beurre de cacahuete',
+  'beurre cut': 'beurre de cacahuete',
+  'keke wet': 'beurre de cacahuete',
+  'peanut butter': 'beurre de cacahuete'
+};
+
 const wordNumbers: Record<string, number> = {
   un: 1,
   une: 1,
@@ -104,6 +113,11 @@ export function parseFoods(text: string): ParsedFood[] {
           break;
         }
       }
+    }
+
+    const alias = nameAliases[name.toLowerCase()];
+    if (alias) {
+      name = alias;
     }
 
     foods.push({ nom: capitalize(name), quantite: quantity, unite: unitNorm, marque, gout });

@@ -230,6 +230,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     setMessages(prev => [...prev, aiMessage]);
     // Clear the input after the AI response is displayed
     setInput('');
+    voiceResultRef.current = '';
   } catch (e) {
     console.error('handleSendMessage error', e);
     if (!timedOut) {
@@ -277,6 +278,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
 
     recognition.onstart = () => {
       voiceResultRef.current = '';
+      setInput('');
       setIsListening(true);
     };
 

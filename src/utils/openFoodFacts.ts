@@ -79,7 +79,9 @@ export async function searchProductFallback(query: string): Promise<OFFProduct[]
       beurre: ['butter'],
       butter: ['beurre'],
       riz: ['rice'],
-      rice: ['riz']
+      rice: ['riz'],
+      'beurre cut': ['beurre de cacahuete', 'peanut butter'],
+      'keke wet': ['beurre de cacahuete']
     };
 
     for (const term of terms) {
