@@ -111,43 +111,54 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       { keywords: ['seitan'], food: { name: 'Seitan', calories: 370, protein: 75, carbs: 14, fat: 1.9, category: 'Protéines', unit: '100g' }},
    ];
 
-    // Détection des quantités dans une portion de texte
-    const extractQuantity = (segment: string) => {
-      const num = segment.match(/(\d+)\s*(?:g|gr|grammes?|kg|ml|cl|l)?/i);
-      if (num) return parseInt(num[1]);
-
-      const words: Record<string, number> = {
-        un: 1,
-        une: 1,
-        deux: 2,
-        trois: 3,
-        quatre: 4,
-        cinq: 5,
-        six: 6,
-        sept: 7,
-        huit: 8,
-        neuf: 9,
-        dix: 10
-      };
-      for (const [w, n] of Object.entries(words)) {
-        if (new RegExp(`\\b${w}\\b`).test(segment)) return n;
-      }
-      return 100; // quantité par défaut
+    const wordsMap: Record<string, number> = {
+      un: 1,
+      une: 1,
+      deux: 2,
+      trois: 3,
+      quatre: 4,
+      cinq: 5,
+      six: 6,
+      sept: 7,
+      huit: 8,
+      neuf: 9,
+      dix: 10
     };
 
-    // Analyse du texte par segments pour éviter les confusions de quantités
-    const segments = lowerDescription
-      .split(/(?:,| et |;|\.)+/)
-      .map(s => s.trim())
+    const parseToken = (t: string): number | null => {
+      const cleaned = t.toLowerCase();
+      if (wordsMap[cleaned] !== undefined) return wordsMap[cleaned];
+      const num = cleaned.match(/^(\d+(?:[.,]\d+)?)(?:g|gr|grammes?|kg|ml|cl|l)?$/);
+      if (num) return parseFloat(num[1].replace(',', '.'));
+      return null;
+    };
+
+    const extractQuantityNear = (tokens: string[], idx: number): number => {
+      for (let i = idx - 1; i >= 0 && i >= idx - 3; i--) {
+        const q = parseToken(tokens[i]);
+        if (q !== null) return q;
+      }
+      for (let i = idx + 1; i < tokens.length && i <= idx + 3; i++) {
+        const q = parseToken(tokens[i]);
+        if (q !== null) return q;
+      }
+      return 100;
+    };
+
+    const tokens = lowerDescription
+      .replace(/[,.!?;]/g, ' ')
+      .split(/\s+/)
       .filter(Boolean);
 
-    segments.forEach(segment => {
+    const used = new Set<number>();
+    tokens.forEach((word, idx) => {
+      const base = word.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       keywordFoods.forEach(({ keywords, food }) => {
-        const found = keywords.some(k => segment.includes(k));
-        if (found) {
-          const quantity = extractQuantity(segment);
+        if (keywords.some(k => base === k || base === `${k}s`)) {
+          if (used.has(idx)) return;
+          const quantity = extractQuantityNear(tokens, idx);
+          used.add(idx);
           const multiplier = quantity / 100;
-
           suggestions.push({
             name: food.name,
             quantity,
@@ -168,6 +179,61 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         }
       });
     });
+
+    // Recherche approximative ou via OpenFoodFacts pour les mots non reconnus
+    for (let i = 0; i < tokens.length; i++) {
+      if (used.has(i)) continue;
+      const clean = tokens[i].replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z]/g, '');
+      if (clean.length < 3) continue;
+      const closest = findClosestFood(clean, fullFoodBase);
+      if (closest && !suggestions.some(s => s.name === closest.name)) {
+        const q = extractQuantityNear(tokens, i);
+        const mult = q / 100;
+        suggestions.push({
+          name: closest.name,
+          quantity: q,
+          unit: closest.unit,
+          calories: closest.calories * mult,
+          protein: closest.protein * mult,
+          carbs: closest.carbs * mult,
+          fat: closest.fat * mult,
+          fiber: (closest.fiber || 0) * mult,
+          vitaminA: closest.vitaminA,
+          vitaminC: closest.vitaminC,
+          calcium: closest.calcium,
+          iron: closest.iron,
+          category: closest.category,
+          meal,
+          confidence: 0.6
+        });
+        used.add(i);
+      } else {
+        const external = await searchProductFallback(clean);
+        if (external[0]) {
+          const r = external[0];
+          const q = extractQuantityNear(tokens, i);
+          const mult = q / 100;
+          suggestions.push({
+            name: r.product_name || 'Produit',
+            quantity: q,
+            unit: r.serving_size?.includes('ml') ? 'ml' : 'g',
+            calories: (r.nutriments?.['energy-kcal_100g'] || 0) * mult,
+            protein: (r.nutriments?.proteins_100g || 0) * mult,
+            carbs: (r.nutriments?.carbohydrates_100g || 0) * mult,
+            fat: (r.nutriments?.fat_100g || 0) * mult,
+            fiber: (r.nutriments?.fiber_100g || 0) * mult,
+            vitaminA: r.nutriments?.['vitamin-a_100g'] || 0,
+            vitaminC: r.nutriments?.['vitamin-c_100g'] || 0,
+            calcium: r.nutriments?.['calcium_100g'] || 0,
+            iron: r.nutriments?.['iron_100g'] || 0,
+            category: 'Importé',
+            meal,
+            confidence: 0.5
+          });
+          used.add(i);
+        }
+      }
+    }
     if (suggestions.length === 0) {
       const closest = findClosestFood(description, [...keywordFoods.map(f => f.food), ...fullFoodBase]);
       if (closest) {
