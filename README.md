@@ -48,3 +48,9 @@ Cette application React permet de suivre votre alimentation et vos objectifs nut
 - Les graphiques de l'historique permettent désormais de choisir la période (7 jours à un an) et les détails quotidiens sont affichés du plus récent au plus ancien.
 
 Ces fonctionnalités reposent sur l'API publique OpenFoodFacts.
+
+## Configuration
+
+L'URL de base de l'API peut être personnalisée avec la variable d'environnement
+`VITE_API_BASE_URL`. Si elle n'est pas définie, l'application utilisera par
+défaut `http://localhost:3001/api`.
