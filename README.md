@@ -24,7 +24,10 @@ npm run update-food-db
 ## Configuration
 
 L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
-Créez un fichier `.env` à la racine si vous souhaitez cibler un autre serveur :
+En production, l'application pointe par défaut vers
+`https://nutritalk-2-0.onrender.com/api`. Créez un fichier `.env` à la racine si
+vous souhaitez cibler un autre serveur ou utiliser `localhost` en
+développement :
 
 ```bash
 VITE_API_URL=http://localhost:3001/api

@@ -1,7 +1,11 @@
 import { User, DailyLog } from '../types';
 
-// Allow overriding the API URL via environment variable for easier deployment
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Use the production backend by default, falling back to localhost during development
+const API =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD
+    ? 'https://nutritalk-2-0.onrender.com/api'
+    : 'http://localhost:3001/api');
 
 let authToken: string | null =
   localStorage.getItem('token') || sessionStorage.getItem('token');
