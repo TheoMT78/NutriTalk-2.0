@@ -83,8 +83,8 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     else if (lower.includes("collation") || lower.includes("goûter")) meal = "collation";
 
     const portionWeights: Record<string, number> = {
-      "oeuf": 60,
-      "oeufs": 60,
+      "oeuf": 55,
+      "oeufs": 55,
       "kiwi": 75,
       "kiwi jaune": 100,
       "banane": 120,
