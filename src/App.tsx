@@ -49,7 +49,12 @@ function App() {
   const [user, setUserState] = useState<User>(initialUser);
   const rememberRef = React.useRef(!!localStorage.getItem('nutritalk-user'));
 
-  const persistUser = (u: User) => {
+  const userRef = React.useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const persistUser = React.useCallback((u: User) => {
     const str = JSON.stringify(u);
     if (rememberRef.current) {
       localStorage.setItem('nutritalk-user', str);
@@ -58,15 +63,17 @@ function App() {
       sessionStorage.setItem('nutritalk-user', str);
       localStorage.removeItem('nutritalk-user');
     }
-  };
+  }, []);
 
-  const setUser = (val: User | ((prev: User) => User)) => {
-    const newUser = typeof val === 'function' ? (val as (p: User) => User)(user) : val;
-    setUserState(newUser);
-    persistUser(newUser);
-  };
+  const setUser = React.useCallback((val: User | ((prev: User) => User)) => {
+    setUserState(prev => {
+      const newUser = typeof val === 'function' ? (val as (p: User) => User)(prev) : val;
+      persistUser(newUser);
+      return newUser;
+    });
+  }, [persistUser]);
 
-  const [dailyLog, setDailyLog] = useLocalStorage<DailyLog>('nutritalk-daily-log', {
+  const [dailyLog, setDailyLogStorage] = useLocalStorage<DailyLog>('nutritalk-daily-log', {
     date: new Date().toISOString().split('T')[0],
     entries: [],
     totalCalories: 0,
@@ -81,7 +88,29 @@ function App() {
     weight: defaultUser.weight
   });
 
-  const [weightHistory, setWeightHistory] = useLocalStorage<{ date: string; weight: number }[]>('nutritalk-weight-history', []);
+  const [weightHistory, setWeightHistoryStorage] = useLocalStorage<{ date: string; weight: number }[]>('nutritalk-weight-history', []);
+
+  const dailyLogRef = React.useRef(dailyLog);
+  useEffect(() => {
+    dailyLogRef.current = dailyLog;
+  }, [dailyLog]);
+
+  const weightHistoryRef = React.useRef(weightHistory);
+  useEffect(() => {
+    weightHistoryRef.current = weightHistory;
+  }, [weightHistory]);
+
+  const setDailyLog = React.useCallback((val: DailyLog | ((prev: DailyLog) => DailyLog)) => {
+    const newVal = typeof val === 'function' ? (val as (p: DailyLog) => DailyLog)(dailyLogRef.current) : val;
+    dailyLogRef.current = newVal;
+    setDailyLogStorage(newVal);
+  }, [setDailyLogStorage]);
+
+  const setWeightHistory = React.useCallback((val: { date: string; weight: number }[] | ((prev: { date: string; weight: number }[]) => { date: string; weight: number }[])) => {
+    const newVal = typeof val === 'function' ? (val as (p: { date: string; weight: number }[]) => { date: string; weight: number }[])(weightHistoryRef.current) : val;
+    weightHistoryRef.current = newVal;
+    setWeightHistoryStorage(newVal);
+  }, [setWeightHistoryStorage]);
 
 
   const [currentView, setCurrentView] = useState('splash');
