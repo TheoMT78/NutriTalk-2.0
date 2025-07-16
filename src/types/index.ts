@@ -81,3 +81,11 @@ export interface Recipe {
   fridgeLife?: string;
   freezerLife?: string;
 }
+
+export interface ParsedFood {
+  nom: string;
+  quantite: number;
+  unite: string;
+  marque?: string;
+  gout?: string;
+}

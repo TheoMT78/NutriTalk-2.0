@@ -92,7 +92,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     else if (lower.includes("dîner") || lower.includes("soir")) meal = "dîner";
     else if (lower.includes("collation") || lower.includes("goûter")) meal = "collation";
 
-    const parsed = parseFoods(description);
+    const parsed = await parseFoods(description);
 
     for (const food of parsed) {
       const baseName = normalize(food.nom);

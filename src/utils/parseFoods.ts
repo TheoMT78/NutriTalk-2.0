@@ -1,10 +1,5 @@
-export interface ParsedFood {
-  nom: string;
-  quantite: number;
-  unite: string;
-  marque?: string;
-  gout?: string;
-}
+import { ParsedFood } from '../types';
+import { parseWithLLM } from './llmParser';
 
 // Some common mistakes or phonetic variants to map back to real foods
 const nameAliases: Record<string, string> = {
@@ -55,7 +50,9 @@ function capitalize(str: string): string {
     .join(' ');
 }
 
-export function parseFoods(text: string): ParsedFood[] {
+export async function parseFoods(text: string): Promise<ParsedFood[]> {
+  const llm = await parseWithLLM(text);
+  if (llm && llm.length > 0) return llm;
   const numWords = ['un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
   const connectors = ['et', 'avec', 'puis', 'alors'];
 

@@ -28,14 +28,16 @@ Créez un fichier `.env` à la racine si vous souhaitez cibler un autre serveur�
 
 ```bash
 VITE_API_URL=http://localhost:3001/api
+VITE_OPENAI_API_KEY=sk-yourkey
 ```
-
+Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au parsage par regex.
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 
 
 ## Nouveautés
 
 - Recherche d'aliments en ligne via OpenFoodFacts lorsque la base interne ne suffit pas.
+- L'analyse des repas peut faire appel à GPT-3.5 si `VITE_OPENAI_API_KEY` est configuré, pour mieux comprendre les phrases naturelles.
 - Si aucun résultat n'est trouvé, chaque mot de votre requête est recherché séparément pour améliorer la détection d'aliments.
 - Les recherches utilisent aussi une correspondance approximative pour trouver l'aliment le plus proche dans la base locale.
 - Possibilité de scanner un code-barres pour importer automatiquement un aliment.
