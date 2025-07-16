@@ -51,9 +51,25 @@ export async function searchProduct(query: string): Promise<OFFProduct[]> {
 }
 
 export async function searchProductFallback(query: string): Promise<OFFProduct[]> {
-  let results = await searchProduct(query);
+  let cleaned = query.trim();
+  const brandMatch = cleaned.match(/(?:marque|brand)\s+([^,]+)/i);
+  if (brandMatch) {
+    const brand = brandMatch[1].trim();
+    cleaned = cleaned.replace(brandMatch[0], '').trim();
+    let byBrand = await searchProduct(`${cleaned} ${brand}`);
+    if (byBrand.length > 0) return byBrand;
+    byBrand = await searchProduct(brand);
+    if (byBrand.length > 0) {
+      const lowered = cleaned.toLowerCase();
+      const filtered = byBrand.filter(p => p.product_name?.toLowerCase().includes(lowered));
+      if (filtered.length > 0) return filtered;
+    }
+  }
+
+  let results = await searchProduct(cleaned);
   if (results.length > 0) return results;
-  const terms = query.split(/\s+/).filter(Boolean);
+
+  const terms = cleaned.split(/\s+/).filter(Boolean);
   const synonyms: Record<string, string[]> = {
     farine: ['flour'],
     flour: ['farine'],
@@ -62,6 +78,7 @@ export async function searchProductFallback(query: string): Promise<OFFProduct[]
     riz: ['rice'],
     rice: ['riz']
   };
+
   for (const term of terms) {
     results = await searchProduct(term);
     if (results.length > 0) return results;
