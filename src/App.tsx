@@ -244,7 +244,15 @@ function App() {
 
   const handleLogin = (u: User, remember: boolean) => {
     rememberRef.current = remember;
-    setUser(u);
+    const merged = { ...defaultUser, ...u } as User;
+    if (!u.dailyCalories) {
+      const t = computeDailyTargets(merged);
+      merged.dailyCalories = t.calories;
+      merged.dailyProtein = t.protein;
+      merged.dailyCarbs = t.carbs;
+      merged.dailyFat = t.fat;
+    }
+    setUser(merged);
     setCurrentView('dashboard');
   };
 
