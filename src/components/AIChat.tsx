@@ -276,7 +276,11 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
 
   const handleVoiceInput = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("La reconnaissance vocale n'est pas supportée par votre navigateur");
+      const manual = prompt("La reconnaissance vocale n'est pas supportée par votre navigateur. Veuillez taper votre message :");
+      if (manual) {
+        setInput(manual);
+        handleSendMessage();
+      }
       return;
     }
 

@@ -16,9 +16,9 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dbFile = path.join(__dirname, 'db.json');
-const db = new Low(new JSONFile(dbFile), { users: [], logs: [] });
+const db = new Low(new JSONFile(dbFile), { users: [], logs: [], weights: [] });
 await db.read();
-if (!db.data) db.data = { users: [], logs: [] };
+if (!db.data) db.data = { users: [], logs: [], weights: [] };
 
 app.post('/api/register', async (req, res) => {
   const user = req.body;
@@ -89,6 +89,22 @@ app.post('/api/logs/:userId/:date', async (req, res) => {
   const idx = db.data.logs.findIndex(l => l.userId === userId && l.date === date);
   const entry = { userId, date, data: req.body };
   if (idx === -1) db.data.logs.push(entry); else db.data.logs[idx] = entry;
+  await db.write();
+  res.json({ success: true });
+});
+
+app.get('/api/weights/:userId', async (req, res) => {
+  await db.read();
+  const weights = db.data.weights.find(w => w.userId === req.params.userId);
+  res.json(weights ? weights.data : []);
+});
+
+app.post('/api/weights/:userId', async (req, res) => {
+  await db.read();
+  const { userId } = req.params;
+  const idx = db.data.weights.findIndex(w => w.userId === userId);
+  const entry = { userId, data: req.body };
+  if (idx === -1) db.data.weights.push(entry); else db.data.weights[idx] = entry;
   await db.write();
   res.json({ success: true });
 });

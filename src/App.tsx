@@ -11,7 +11,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
 import { computeDailyTargets } from './utils/nutrition';
 import { loadLocalFoodBase } from './utils/openFoodFacts';
-import { getDailyLog, saveDailyLog, updateProfile, getProfile } from './utils/api';
+import { getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory } from './utils/api';
 
 function App() {
   const defaultUser = {
@@ -88,8 +88,11 @@ function App() {
       getDailyLog(user.id, today).then(log => {
         if (log) setDailyLog(log);
       }).catch(() => {});
+      getWeightHistory(user.id).then(hist => {
+        if (hist) setWeightHistory(hist);
+      }).catch(() => {});
     }
-  }, [user.id, setUser, setDailyLog]);
+  }, [user.id, setUser, setDailyLog, setWeightHistory]);
 
   useEffect(() => {
     if (user.id) {
@@ -102,6 +105,12 @@ function App() {
       updateProfile(user.id, user).catch(() => {});
     }
   }, [user, user.id]);
+
+  useEffect(() => {
+    if (user.id) {
+      saveWeightHistory(user.id, weightHistory).catch(() => {});
+    }
+  }, [weightHistory, user.id]);
 
 
   const addFoodEntry = (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {

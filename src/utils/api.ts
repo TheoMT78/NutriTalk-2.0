@@ -53,3 +53,19 @@ export async function getProfile(userId: string) {
   if (!res.ok) throw new Error('Failed to load profile');
   return res.json();
 }
+
+export async function getWeightHistory(userId: string) {
+  const res = await fetch(`${API}/weights/${userId}`);
+  if (!res.ok) throw new Error('Failed to load weights');
+  return res.json();
+}
+
+export async function saveWeightHistory(userId: string, history: { date: string; weight: number }[]) {
+  const res = await fetch(`${API}/weights/${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(history)
+  });
+  if (!res.ok) throw new Error('Failed to save weights');
+  return res.json();
+}
