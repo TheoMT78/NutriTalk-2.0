@@ -7,11 +7,13 @@ import History from './components/History';
 import Recipes from './components/Recipes';
 import AIChat from './components/AIChat';
 import FloatingAIButton from './components/FloatingAIButton';
+import SplashScreen from './components/SplashScreen';
+import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { User, FoodEntry, DailyLog } from './types';
+import { getAuthToken, clearAuthToken, getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory, syncAll } from './utils/api';
 import { computeDailyTargets } from './utils/nutrition';
 import { loadLocalFoodBase } from './utils/openFoodFacts';
-import { getDailyLog, saveDailyLog, updateProfile, getProfile, getWeightHistory, saveWeightHistory, syncAll } from './utils/api';
 
 function App() {
   const defaultUser = {
@@ -33,14 +35,36 @@ function App() {
 
   const targets = computeDailyTargets(defaultUser);
 
-  const [user, setUser] = useLocalStorage<User>('nutritalk-user', {
-    ...defaultUser,
-    dailyCalories: targets.calories,
-    dailyProtein: targets.protein,
-    dailyCarbs: targets.carbs,
-    dailyFat: targets.fat,
-    dailyWater: defaultUser.dailyWater
-  });
+  const storedUser = localStorage.getItem('nutritalk-user') || sessionStorage.getItem('nutritalk-user');
+  const initialUser: User = storedUser
+    ? JSON.parse(storedUser)
+    : {
+        ...defaultUser,
+        dailyCalories: targets.calories,
+        dailyProtein: targets.protein,
+        dailyCarbs: targets.carbs,
+        dailyFat: targets.fat,
+        dailyWater: defaultUser.dailyWater,
+      };
+  const [user, setUserState] = useState<User>(initialUser);
+  const rememberRef = React.useRef(!!localStorage.getItem('nutritalk-user'));
+
+  const persistUser = (u: User) => {
+    const str = JSON.stringify(u);
+    if (rememberRef.current) {
+      localStorage.setItem('nutritalk-user', str);
+      sessionStorage.removeItem('nutritalk-user');
+    } else {
+      sessionStorage.setItem('nutritalk-user', str);
+      localStorage.removeItem('nutritalk-user');
+    }
+  };
+
+  const setUser = (val: User | ((prev: User) => User)) => {
+    const newUser = typeof val === 'function' ? (val as (p: User) => User)(user) : val;
+    setUserState(newUser);
+    persistUser(newUser);
+  };
 
   const [dailyLog, setDailyLog] = useLocalStorage<DailyLog>('nutritalk-daily-log', {
     date: new Date().toISOString().split('T')[0],
@@ -60,9 +84,33 @@ function App() {
   const [weightHistory, setWeightHistory] = useLocalStorage<{ date: string; weight: number }[]>('nutritalk-weight-history', []);
 
 
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState('splash');
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Splash screen then determine if we should show auth or dashboard
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      localStorage.removeItem('nutritalk-user');
+      sessionStorage.removeItem('nutritalk-user');
+      setUserState({
+        ...defaultUser,
+        dailyCalories: targets.calories,
+        dailyProtein: targets.protein,
+        dailyCarbs: targets.carbs,
+        dailyFat: targets.fat,
+        dailyWater: defaultUser.dailyWater,
+      });
+      rememberRef.current = false;
+    } else {
+      rememberRef.current = !!localStorage.getItem('token');
+    }
+    const timer = setTimeout(() => {
+      setCurrentView(token ? 'dashboard' : 'auth');
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (user.theme === 'dark') {
@@ -194,8 +242,33 @@ function App() {
     });
   };
 
+  const handleLogin = (u: User, remember: boolean) => {
+    rememberRef.current = remember;
+    setUser(u);
+    setCurrentView('dashboard');
+  };
+
+  const handleLogout = () => {
+    clearAuthToken();
+    localStorage.removeItem('nutritalk-user');
+    sessionStorage.removeItem('nutritalk-user');
+    setUser({
+      ...defaultUser,
+      dailyCalories: targets.calories,
+      dailyProtein: targets.protein,
+      dailyCarbs: targets.carbs,
+      dailyFat: targets.fat,
+      dailyWater: defaultUser.dailyWater,
+    });
+    setCurrentView('auth');
+  };
+
   const renderView = () => {
     switch (currentView) {
+      case 'splash':
+        return <SplashScreen />;
+      case 'auth':
+        return <Login user={user} onLogin={handleLogin} />;
       case 'dashboard':
         return (
           <Dashboard
@@ -213,7 +286,7 @@ function App() {
       case 'recipes':
         return <Recipes />;
       case 'profile':
-        return <Profile user={user} onUpdateUser={setUser} />;
+        return <Profile user={user} onUpdateUser={setUser} onLogout={handleLogout} />;
       case 'history':
         return <History user={user} weightHistory={weightHistory} />;
       default:
@@ -235,28 +308,33 @@ function App() {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
     }`}>
-      <Header
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        isDarkMode={isDarkMode}
-        onToggleTheme={() => {
-          const newTheme = isDarkMode ? 'light' : 'dark';
-          setUser(prev => ({ ...prev, theme: newTheme }));
-        }}
-      />
-      
+      {currentView !== 'auth' && currentView !== 'splash' && (
+        <Header
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          isDarkMode={isDarkMode}
+          onToggleTheme={() => {
+            const newTheme = isDarkMode ? 'light' : 'dark';
+            setUser(prev => ({ ...prev, theme: newTheme }));
+          }}
+        />
+      )}
+
       <main className="container mx-auto px-4 py-6 pb-20">
         {renderView()}
       </main>
 
-      <FloatingAIButton onClick={() => setIsAIChatOpen(true)} />
-      
-      {isAIChatOpen && (
-        <AIChat 
-          onClose={() => setIsAIChatOpen(false)} 
-          onAddFood={addFoodEntry}
-          isDarkMode={isDarkMode}
-        />
+      {currentView === 'dashboard' && (
+        <>
+          <FloatingAIButton onClick={() => setIsAIChatOpen(true)} />
+          {isAIChatOpen && (
+            <AIChat
+              onClose={() => setIsAIChatOpen(false)}
+              onAddFood={addFoodEntry}
+              isDarkMode={isDarkMode}
+            />
+          )}
+        </>
       )}
     </div>
   );

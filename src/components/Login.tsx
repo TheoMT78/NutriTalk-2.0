@@ -4,7 +4,7 @@ import { login, register, setAuthToken } from '../utils/api';
 
 interface LoginProps {
   user: User;
-  onLogin: (user: User) => void;
+  onLogin: (user: User, remember: boolean) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
@@ -18,11 +18,11 @@ const Login: React.FC<LoginProps> = ({ user, onLogin }) => {
     try {
       if (isSignup) {
         const newUser = await register({ ...user, email, password });
-        onLogin(newUser);
+        onLogin(newUser, rememberMe);
       } else {
         const { user: loggedUser, token } = await login(email, password);
         setAuthToken(token, rememberMe);
-        onLogin(loggedUser);
+        onLogin(loggedUser, rememberMe);
       }
     } catch {
       alert('Email ou mot de passe incorrect');
