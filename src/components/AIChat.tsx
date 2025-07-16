@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
-import { searchProductFallback } from '../utils/openFoodFacts';
+import { searchNutrition } from '../utils/nutritionSearch';
 import { findClosestFood } from '../utils/findClosestFood';
 import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
 import { Recipe } from '../types';
@@ -208,24 +208,23 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
         });
         used.add(i);
       } else {
-        const external = await searchProductFallback(clean);
-        if (external[0]) {
-          const r = external[0];
+        const ext = await searchNutrition(clean);
+        if (ext) {
           const q = extractQuantityNear(tokens, i);
           const mult = q / 100;
           suggestions.push({
-            name: r.product_name || 'Produit',
+            name: ext.name,
             quantity: q,
-            unit: r.serving_size?.includes('ml') ? 'ml' : 'g',
-            calories: (r.nutriments?.['energy-kcal_100g'] || 0) * mult,
-            protein: (r.nutriments?.proteins_100g || 0) * mult,
-            carbs: (r.nutriments?.carbohydrates_100g || 0) * mult,
-            fat: (r.nutriments?.fat_100g || 0) * mult,
-            fiber: (r.nutriments?.fiber_100g || 0) * mult,
-            vitaminA: r.nutriments?.['vitamin-a_100g'] || 0,
-            vitaminC: r.nutriments?.['vitamin-c_100g'] || 0,
-            calcium: r.nutriments?.['calcium_100g'] || 0,
-            iron: r.nutriments?.['iron_100g'] || 0,
+            unit: ext.unit || 'g',
+            calories: (ext.calories || 0) * mult,
+            protein: (ext.protein || 0) * mult,
+            carbs: (ext.carbs || 0) * mult,
+            fat: (ext.fat || 0) * mult,
+            fiber: 0,
+            vitaminA: 0,
+            vitaminC: 0,
+            calcium: 0,
+            iron: 0,
             category: 'Importé',
             meal,
             confidence: 0.5
@@ -258,26 +257,26 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     }
 
     if (suggestions.length === 0) {
-      const external = await searchProductFallback(description);
-      external.slice(0, 3).forEach(p => {
+      const ext = await searchNutrition(description);
+      if (ext) {
         suggestions.push({
-          name: p.product_name || 'Produit',
+          name: ext.name,
           quantity: 100,
-          unit: p.serving_size?.includes('ml') ? 'ml' : 'g',
-          calories: p.nutriments?.['energy-kcal_100g'] || 0,
-          protein: p.nutriments?.proteins_100g || 0,
-          carbs: p.nutriments?.carbohydrates_100g || 0,
-          fat: p.nutriments?.fat_100g || 0,
-          fiber: p.nutriments?.fiber_100g || 0,
-          vitaminA: p.nutriments?.['vitamin-a_100g'] || 0,
-          vitaminC: p.nutriments?.['vitamin-c_100g'] || 0,
-          calcium: p.nutriments?.['calcium_100g'] || 0,
-          iron: p.nutriments?.['iron_100g'] || 0,
+          unit: ext.unit || 'g',
+          calories: ext.calories || 0,
+          protein: ext.protein || 0,
+          carbs: ext.carbs || 0,
+          fat: ext.fat || 0,
+          fiber: 0,
+          vitaminA: 0,
+          vitaminC: 0,
+          calcium: 0,
+          iron: 0,
           category: 'Importé',
           meal,
           confidence: 0.6
         });
-      });
+      }
     }
 
     return suggestions;
