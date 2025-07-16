@@ -1,8 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Mic, MicOff, Bot, User, Loader } from 'lucide-react';
-import { searchProductFallback } from '../utils/openFoodFacts';
+import { searchNutrition } from '../utils/nutritionSearch';
 import { findClosestFood } from '../utils/findClosestFood';
-import { Recipe } from '../types';
+import { foodDatabase as fullFoodBase } from '../data/foodDatabase';
+import { keywordFoods } from '../data/keywordFoods';
+import { unitWeights } from '../data/unitWeights';
+import { parseFoods } from '../utils/parseFoods';
+import { Recipe, FoodItem } from '../types';
+
+const normalize = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/œ/g, 'oe')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\p{P}\p{S}]/gu, '')
+    .trim();
 
 interface AIChatProps {
   onClose: () => void;
@@ -73,128 +86,60 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
 
   const analyzeFood = async (description: string): Promise<FoodSuggestion[]> => {
     const suggestions: FoodSuggestion[] = [];
-    const lowerDescription = description.toLowerCase();
-    
-    // Détection du repas
-    let meal: 'petit-déjeuner' | 'déjeuner' | 'dîner' | 'collation' = 'déjeuner';
-    if (lowerDescription.includes('petit-déjeuner') || lowerDescription.includes('matin')) {
-      meal = 'petit-déjeuner';
-    } else if (lowerDescription.includes('dîner') || lowerDescription.includes('soir')) {
-      meal = 'dîner';
-    } else if (lowerDescription.includes('collation') || lowerDescription.includes('goûter')) {
-      meal = 'collation';
-    }
+    const lower = description.toLowerCase();
+    let meal: "petit-déjeuner" | "déjeuner" | "dîner" | "collation" = "déjeuner";
+    if (lower.includes("petit-déjeuner") || lower.includes("matin")) meal = "petit-déjeuner";
+    else if (lower.includes("dîner") || lower.includes("soir")) meal = "dîner";
+    else if (lower.includes("collation") || lower.includes("goûter")) meal = "collation";
 
-    // Base de données simplifiée pour la reconnaissance
-    const foodDatabase = [
-      { keywords: ['pâtes', 'pasta', 'spaghetti', 'tagliatelle'], food: { name: 'Pâtes cuites', calories: 131, protein: 5, carbs: 25, fat: 1.1, category: 'Féculents', unit: '100g' }},
-      { keywords: ['riz', 'rice'], food: { name: 'Riz blanc cuit', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, category: 'Féculents', unit: '100g' }},
-      { keywords: ['poulet', 'chicken'], food: { name: 'Blanc de poulet', calories: 165, protein: 31, carbs: 0, fat: 3.6, category: 'Protéines', unit: '100g' }},
-      { keywords: ['œuf', 'oeuf', 'egg'], food: { name: 'Œufs', calories: 155, protein: 13, carbs: 1.1, fat: 11, category: 'Protéines', unit: '100g' }},
-      { keywords: ['avocat', 'avocado'], food: { name: 'Avocat', calories: 160, protein: 2, carbs: 9, fat: 15, category: 'Fruits', unit: '100g' }},
-      { keywords: ['pain', 'bread'], food: { name: 'Pain complet', calories: 247, protein: 13, carbs: 41, fat: 4.2, category: 'Féculents', unit: '100g' }},
-      { keywords: ['tomate', 'tomato'], food: { name: 'Tomates', calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, category: 'Légumes', unit: '100g' }},
-      { keywords: ['salade', 'salad'], food: { name: 'Salade verte', calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2, category: 'Légumes', unit: '100g' }},
-      { keywords: ['banane', 'banana'], food: { name: 'Banane', calories: 89, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, vitaminC: 15, category: 'Fruits', unit: '100g' }},
-      { keywords: ['kiwi jaune', 'kiwi gold', 'kiwi', 'sungold'], food: { name: 'Kiwi jaune', calories: 60, protein: 1.1, carbs: 15, fat: 0.5, fiber: 2, vitaminC: 140, category: 'Fruits', unit: '100g' }},
-      { keywords: ['pomme', 'apple'], food: { name: 'Pomme', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, fiber: 2.4, vitaminC: 7, category: 'Fruits', unit: '100g' }},
-      { keywords: ['yaourt', 'yogurt'], food: { name: 'Yaourt nature 0%', calories: 56, protein: 10, carbs: 4, fat: 0.1, category: 'Produits laitiers', unit: '100g' }},
-      { keywords: ['fromage', 'cheese'], food: { name: 'Fromage', calories: 280, protein: 22, carbs: 2.2, fat: 22, category: 'Produits laitiers', unit: '100g' }},
-      { keywords: ['bœuf', 'beef'], food: { name: 'Bœuf haché 5%', calories: 137, protein: 20, carbs: 0, fat: 5, category: 'Protéines', unit: '100g' }},
-      { keywords: ['saumon', 'salmon'], food: { name: 'Saumon', calories: 208, protein: 22, carbs: 0, fat: 13, category: 'Protéines', unit: '100g' }},
-      { keywords: ['brocoli', 'broccoli'], food: { name: 'Brocolis', calories: 34, protein: 2.8, carbs: 7, fat: 0.4, category: 'Légumes', unit: '100g' }},
-    ];
+    const parsed = await parseFoods(description);
 
-    // Détection des quantités
-    const extractQuantity = (text: string, keyword: string) => {
-      const patterns = [
-        new RegExp(`(\\d+)\\s*g.*?${keyword}`, 'i'),
-        new RegExp(`${keyword}.*?(\\d+)\\s*g`, 'i'),
-        new RegExp(`(\\d+)\\s*${keyword}`, 'i'),
-        new RegExp(`${keyword}.*?(\\d+)`, 'i')
-      ];
-      
-      for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-          return parseInt(match[1]);
+    for (const food of parsed) {
+      const baseName = normalize(food.nom);
+      const fromKeywords = keywordFoods.find(k =>
+        k.keywords.some(kw => baseName.includes(normalize(kw)))
+      );
+      let info: FoodItem | null = fromKeywords ? (fromKeywords.food as FoodItem) : null;
+      if (!info) {
+        const closest = findClosestFood(baseName, fullFoodBase);
+        if (closest) info = closest;
+      }
+      if (!info) {
+        const ext = await searchNutrition(`${food.nom} ${food.marque || ''}`.trim());
+        if (ext) {
+          info = { name: ext.name, calories: ext.calories || 0, protein: ext.protein || 0, carbs: ext.carbs || 0, fat: ext.fat || 0, category: 'Importé', unit: ext.unit || '100g' } as FoodItem;
         }
       }
-      return 100; // quantité par défaut
-    };
-
-    // Analyse du texte
-    foodDatabase.forEach(({ keywords, food }) => {
-      const found = keywords.some(keyword => lowerDescription.includes(keyword));
-      if (found) {
-        const quantity = extractQuantity(lowerDescription, keywords[0]);
-        const multiplier = quantity / 100;
-        
-        suggestions.push({
-          name: food.name,
-          quantity,
-          unit: food.unit,
-          calories: food.calories * multiplier,
-          protein: food.protein * multiplier,
-          carbs: food.carbs * multiplier,
-          fat: food.fat * multiplier,
-          fiber: (food.fiber || 0) * multiplier,
-          vitaminA: (food.vitaminA || 0) * multiplier,
-          vitaminC: (food.vitaminC || 0) * multiplier,
-          calcium: (food.calcium || 0) * multiplier,
-          iron: (food.iron || 0) * multiplier,
-          category: food.category,
-          meal,
-        confidence: 0.8 + Math.random() * 0.2
-      });
+      if (!info) continue;
+      const baseAmount = parseFloat(info.unit) || 100;
+      let grams = food.quantite;
+      if (food.unite === "unite") {
+        const w = unitWeights[normalize(baseName)] || baseAmount;
+        grams = food.quantite * w;
+      } else if (food.unite === "cas") {
+        grams = food.quantite * 15;
+      } else if (food.unite === "cac") {
+        grams = food.quantite * 5;
       }
-    });
-    if (suggestions.length === 0) {
-      const closest = findClosestFood(description, foodDatabase.map(f => f.food));
-      if (closest) {
-        suggestions.push({
-          name: closest.name,
-          quantity: 100,
-          unit: closest.unit,
-          calories: closest.calories,
-          protein: closest.protein,
-          carbs: closest.carbs,
-          fat: closest.fat,
-          fiber: closest.fiber,
-          vitaminA: closest.vitaminA,
-          vitaminC: closest.vitaminC,
-          calcium: closest.calcium,
-          iron: closest.iron,
-          category: closest.category,
-          meal,
-          confidence: 0.5,
-        });
-      }
-    }
-
-    if (suggestions.length === 0) {
-      const external = await searchProductFallback(description);
-      external.slice(0, 3).forEach(p => {
-        suggestions.push({
-          name: p.product_name || 'Produit',
-          quantity: 100,
-          unit: p.serving_size?.includes('ml') ? 'ml' : 'g',
-          calories: p.nutriments?.['energy-kcal_100g'] || 0,
-          protein: p.nutriments?.proteins_100g || 0,
-          carbs: p.nutriments?.carbohydrates_100g || 0,
-          fat: p.nutriments?.fat_100g || 0,
-          fiber: p.nutriments?.fiber_100g || 0,
-          vitaminA: p.nutriments?.['vitamin-a_100g'] || 0,
-          vitaminC: p.nutriments?.['vitamin-c_100g'] || 0,
-          calcium: p.nutriments?.['calcium_100g'] || 0,
-          iron: p.nutriments?.['iron_100g'] || 0,
-          category: 'Importé',
-          meal,
-          confidence: 0.6
-        });
+      const mult = grams / baseAmount;
+      suggestions.push({
+        name: info.name,
+        quantity: food.quantite,
+        unit: food.unite,
+        calories: info.calories * mult,
+        protein: info.protein * mult,
+        carbs: info.carbs * mult,
+        fat: info.fat * mult,
+        fiber: info.fiber ? info.fiber * mult : 0,
+        vitaminA: info.vitaminA ? info.vitaminA * mult : 0,
+        vitaminC: info.vitaminC ? info.vitaminC * mult : 0,
+        calcium: info.calcium ? info.calcium * mult : 0,
+        iron: info.iron ? info.iron * mult : 0,
+        category: info.category,
+        meal,
+        confidence: fromKeywords ? 0.9 : info.category === "Importé" ? 0.5 : 0.6
       });
     }
-
     return suggestions;
   };
 
@@ -227,29 +172,71 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     setInput('');
     setIsLoading(true);
 
-    // Simulated AI processing
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      setIsLoading(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: "Je n'ai pas pu traiter votre demande. Essayez de simplifier ou corriger votre phrase.",
+          timestamp: new Date()
+        }
+      ]);
+    }, 10000);
 
-    const suggestions = await analyzeFood(input);
-    const recipe = parseRecipe(input);
+    try {
+      // Simulated AI processing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const suggestions = await analyzeFood(input).catch(e => {
+        console.error('analyzeFood error', e);
+        return [] as FoodSuggestion[];
+      });
+      const recipe = parseRecipe(input);
+
+      if (timedOut) return;
     
     let aiResponse = '';
     if (suggestions.length > 0) {
       aiResponse = `J'ai analysé votre repas et identifié ${suggestions.length} aliment(s). Voici ce que j'ai trouvé :`;
-      
+
       suggestions.forEach((suggestion, index) => {
         const totalCalories = suggestion.calories.toFixed(0);
         const displayUnit = suggestion.unit.replace(/^100/, '');
-        aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})
-        - ${totalCalories} kcal
-        - Protéines: ${suggestion.protein.toFixed(1)}g
-        - Glucides: ${suggestion.carbs.toFixed(1)}g
-        - Lipides: ${suggestion.fat.toFixed(1)}g`;
+        aiResponse += `\n\n${index + 1}. **${suggestion.name}** (${suggestion.quantity}${displayUnit})` +
+          `\n        - ${totalCalories} kcal` +
+          `\n        - Protéines: ${suggestion.protein.toFixed(1)}g` +
+          `\n        - Glucides: ${suggestion.carbs.toFixed(1)}g` +
+          `\n        - Lipides: ${suggestion.fat.toFixed(1)}g`;
       });
-      
+
+      const totals = suggestions.reduce(
+        (acc, s) => ({
+          calories: acc.calories + s.calories,
+          protein: acc.protein + s.protein,
+          carbs: acc.carbs + s.carbs,
+          fat: acc.fat + s.fat,
+          fiber: (acc.fiber || 0) + (s.fiber || 0),
+          vitaminC: (acc.vitaminC || 0) + (s.vitaminC || 0)
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitaminC: 0 }
+      );
+
+      aiResponse += `\n\n**Total**: ${totals.calories.toFixed(0)} kcal - ${totals.protein.toFixed(1)}g protéines, ${totals.carbs.toFixed(1)}g glucides, ${totals.fat.toFixed(1)}g lipides`;
+      if (totals.fiber) {
+        aiResponse += `, ${totals.fiber.toFixed(1)}g fibres`;
+      }
+      if (totals.vitaminC) {
+        aiResponse += `, ${totals.vitaminC.toFixed(0)}mg vitamine C`;
+      }
+      aiResponse += '.';
+
       aiResponse += '\n\nVoulez-vous ajouter ces aliments à votre journal ? Vous pouvez cliquer sur "Ajouter" pour chaque aliment ou modifier les quantités si nécessaire.';
     } else {
-      aiResponse = "Je n'ai pas pu identifier d'aliments spécifiques dans votre description. Pourriez-vous être plus précis ? Par exemple : 'J'ai mangé 150g de riz avec 100g de poulet grillé et des légumes'.";
+      aiResponse = "Aucun résultat fiable trouvé pour votre message.";
     }
 
     const aiMessage: Message = {
@@ -262,14 +249,38 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     };
 
     setMessages(prev => [...prev, aiMessage]);
-    setIsLoading(false);
+    // Clear the input after the AI response is displayed
+    setInput('');
+    voiceResultRef.current = '';
+  } catch (e) {
+    console.error('handleSendMessage error', e);
+    if (!timedOut) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: "Je n'ai pas pu traiter votre demande. Essayez de simplifier ou corriger votre phrase.",
+          timestamp: new Date()
+        }
+      ]);
+    }
+  } finally {
+    clearTimeout(timeout);
+    if (!timedOut) setIsLoading(false);
+  }
   };
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const voiceResultRef = useRef('');
 
   const handleVoiceInput = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert("La reconnaissance vocale n'est pas supportée par votre navigateur");
+      const manual = prompt("La reconnaissance vocale n'est pas supportée par votre navigateur. Veuillez taper votre message :");
+      if (manual) {
+        setInput(manual);
+        handleSendMessage();
+      }
       return;
     }
 
@@ -287,6 +298,8 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
     recognition.interimResults = true;
 
     recognition.onstart = () => {
+      voiceResultRef.current = '';
+      setInput('');
       setIsListening(true);
     };
 
@@ -294,6 +307,7 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
       const transcript = Array.from(event.results)
         .map(r => r[0].transcript)
         .join(' ');
+      voiceResultRef.current = transcript;
       setInput(transcript);
     };
 
@@ -303,6 +317,9 @@ const AIChat: React.FC<AIChatProps> = ({ onClose, onAddFood, onAddRecipe, isDark
 
     recognition.onend = () => {
       setIsListening(false);
+      if (voiceResultRef.current.trim()) {
+        handleSendMessage();
+      }
     };
 
     recognition.start();

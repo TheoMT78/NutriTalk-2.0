@@ -3,9 +3,49 @@
 
 Cette application React permet de suivre votre alimentation et vos objectifs nutritionnels.
 
+## Installation
+
+```bash
+npm install
+```
+
+Le script `postinstall` installe aussi les dépendances du dossier `server`. Démarrez ensuite l'API avec :
+
+```bash
+(cd server && npm start)
+```
+
+Pour étendre la base d'aliments locale, exécutez :
+
+```bash
+npm run update-food-db
+```
+
+## Configuration
+
+L'application front-end lit l'URL de l'API depuis la variable `VITE_API_URL`.
+En production, l'application pointe par défaut vers
+`https://nutritalk-2-0.onrender.com/api`. Créez un fichier `.env` à la racine si
+vous souhaitez cibler un autre serveur ou utiliser `localhost` en
+développement :
+
+```bash
+VITE_API_URL=http://localhost:3001/api
+VITE_OPENAI_API_KEY=sk-yourkey
+EDAMAM_APP_ID=
+EDAMAM_APP_KEY=
+SPOONACULAR_KEY=
+GOOGLE_API_KEY=
+GOOGLE_CSE_ID=
+```
+Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au parsage par regex.
+Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
+
+
 ## Nouveautés
 
 - Recherche d'aliments en ligne via OpenFoodFacts lorsque la base interne ne suffit pas.
+- L'analyse des repas peut faire appel à GPT-3.5 si `VITE_OPENAI_API_KEY` est configuré, pour mieux comprendre les phrases naturelles.
 - Si aucun résultat n'est trouvé, chaque mot de votre requête est recherché séparément pour améliorer la détection d'aliments.
 - Les recherches utilisent aussi une correspondance approximative pour trouver l'aliment le plus proche dans la base locale.
 - Possibilité de scanner un code-barres pour importer automatiquement un aliment.
@@ -31,7 +71,10 @@ Cette application React permet de suivre votre alimentation et vos objectifs nut
 - Le suivi des pas affiche le pourcentage exact même au-delà de 100%.
 - Base d'aliments enrichie avec encore plus de produits crus, légumineuses et fruits pour de meilleurs résultats lors des recherches.
 - Une base locale de 500 aliments issus d'OpenFoodFacts est embarquée dans `aliments.json`.
+  Vous pouvez l'enrichir en exécutant `npm run update-food-db` qui télécharge
+  plusieurs milliers d'aliments supplémentaires depuis OpenFoodFacts.
 - Ajout de nouveaux aliments comme la patate douce et le kiwi jaune pour améliorer la reconnaissance hors ligne.
+- Les poids par pièce (oeuf, kiwi...) sont normalisés via `unitWeights.ts` pour convertir correctement "1 œuf" ou "1 egg" en grammes.
 - Historique enrichi avec graphiques du poids et du nombre de pas.
 - Historique d'exemple d'un an pour visualiser immédiatement les graphiques.
 - Historique vide par défaut et calendrier plus large avec cases réduites.
@@ -48,3 +91,17 @@ Cette application React permet de suivre votre alimentation et vos objectifs nut
 - Les graphiques de l'historique permettent désormais de choisir la période (7 jours à un an) et les détails quotidiens sont affichés du plus récent au plus ancien.
 
 Ces fonctionnalités reposent sur l'API publique OpenFoodFacts.
+Pour obtenir des informations plus précises lorsque la base locale échoue,
+l'application peut également interroger Edamam, Spoonacular ou
+Google Custom Search. Ce moteur est configuré pour cibler en priorité MyProtein,
+Prozis et Bulk afin d'obtenir les valeurs nutritionnelles de ces sites lorsque
+c'est possible.
+Renseignez les clés correspondantes dans `.env` pour activer ces services.
+Configurez également Google Programmable Search si vous souhaitez un dernier recours.
+Ce moteur doit contenir vos sites favoris (MyProtein, Prozis, Bulk…).
+Définissez les variables suivantes dans `.env` :
+
+```bash
+GOOGLE_API_KEY=
+GOOGLE_CSE_ID=
+```

@@ -46,6 +46,8 @@ export interface DailyLog {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
+  totalFiber?: number;
+  totalVitaminC?: number;
   water: number;
   steps: number;
   targetCalories: number;
@@ -78,4 +80,12 @@ export interface Recipe {
   prepTime?: string;
   fridgeLife?: string;
   freezerLife?: string;
+}
+
+export interface ParsedFood {
+  nom: string;
+  quantite: number;
+  unite: string;
+  marque?: string;
+  gout?: string;
 }
