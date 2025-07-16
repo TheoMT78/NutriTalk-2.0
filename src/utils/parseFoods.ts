@@ -90,6 +90,8 @@ export async function parseFoods(text: string): Promise<ParsedFood[]> {
 
   const brandList = [
     'myprotein',
+    'prozis',
+    'bulk',
     'auchan',
     'carrefour',
     'aldi',

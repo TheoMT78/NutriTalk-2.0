@@ -13,31 +13,32 @@ function extractNutrition(text: string) {
   };
 }
 
-async function searchMyProtein(query: string): Promise<NutritionInfo | null> {
+// Google Programmable Search is configured with these sites, queried first
+const preferredSites = ['myprotein.com', 'prozis.com', 'bulk.com'];
+
+async function searchPreferredSites(query: string): Promise<NutritionInfo | null> {
   const gKey = process.env.GOOGLE_API_KEY;
   const cseId = process.env.GOOGLE_CSE_ID;
   if (!gKey || !cseId) return null;
-  try {
-    const q = `site:myprotein.com ${query} valeurs nutritionnelles`;
-    const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(q)}&key=${gKey}&cx=${cseId}`;
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      for (const item of data.items || []) {
-        const text: string = item.snippet || '';
-        const title: string = item.title || query;
-        const nut = extractNutrition(text);
-        if (nut.calories || nut.protein || nut.carbs || nut.fat) {
-          return {
-            name: title,
-            ...nut,
-            unit: '100g'
-          };
+  for (const site of preferredSites) {
+    try {
+      const q = `site:${site} ${query} valeurs nutritionnelles`;
+      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(q)}&key=${gKey}&cx=${cseId}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        for (const item of data.items || []) {
+          const text: string = item.snippet || '';
+          const title: string = item.title || query;
+          const nut = extractNutrition(text);
+          if (nut.calories || nut.protein || nut.carbs || nut.fat) {
+            return { name: title, ...nut, unit: '100g' };
+          }
         }
       }
+    } catch (e) {
+      console.error('Preferred site search error', e);
     }
-  } catch (e) {
-    console.error('MyProtein search error', e);
   }
   return null;
 }
@@ -65,9 +66,9 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
     };
   }
 
-  if (/myprotein/i.test(query)) {
-    const mp = await searchMyProtein(query);
-    if (mp) return mp;
+  if (/(myprotein|prozis|bulk)/i.test(query)) {
+    const brandResult = await searchPreferredSites(query);
+    if (brandResult) return brandResult;
   }
 
   const appId = process.env.EDAMAM_APP_ID;

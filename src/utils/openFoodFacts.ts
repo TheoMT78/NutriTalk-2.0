@@ -81,7 +81,9 @@ export async function searchProductFallback(query: string): Promise<OFFProduct[]
       riz: ['rice'],
       rice: ['riz'],
       'beurre cut': ['beurre de cacahuete', 'peanut butter'],
-      'keke wet': ['beurre de cacahuete']
+      'keke wet': ['beurre de cacahuete'],
+      prozis: [],
+      bulk: []
     };
 
     for (const term of terms) {

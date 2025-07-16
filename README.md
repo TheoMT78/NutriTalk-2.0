@@ -90,10 +90,13 @@ Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 Ces fonctionnalités reposent sur l'API publique OpenFoodFacts.
 Pour obtenir des informations plus précises lorsque la base locale échoue,
 l'application peut également interroger Edamam, Spoonacular ou
-Google Custom Search (utilisé notamment pour les produits MyProtein).
+Google Custom Search. Ce moteur est configuré pour cibler en priorité MyProtein,
+Prozis et Bulk afin d'obtenir les valeurs nutritionnelles de ces sites lorsque
+c'est possible.
 Renseignez les clés correspondantes dans `.env` pour activer ces services.
-Configurez également Google Custom Search si vous souhaitez un dernier recours
-en définissant les variables suivantes dans `.env` :
+Configurez également Google Programmable Search si vous souhaitez un dernier recours.
+Ce moteur doit contenir vos sites favoris (MyProtein, Prozis, Bulk…).
+Définissez les variables suivantes dans `.env` :
 
 ```bash
 GOOGLE_API_KEY=
