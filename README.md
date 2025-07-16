@@ -29,6 +29,11 @@ Créez un fichier `.env` à la racine si vous souhaitez cibler un autre serveur�
 ```bash
 VITE_API_URL=http://localhost:3001/api
 VITE_OPENAI_API_KEY=sk-yourkey
+EDAMAM_APP_ID=
+EDAMAM_APP_KEY=
+SPOONACULAR_KEY=
+GOOGLE_API_KEY=
+GOOGLE_CSE_ID=
 ```
 Si `VITE_OPENAI_API_KEY` n'est pas défini, l'analyse des aliments se limite au parsage par regex.
 Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
@@ -83,3 +88,7 @@ Sans ce fichier, l'URL ci-dessus est utilisée par défaut.
 - Les graphiques de l'historique permettent désormais de choisir la période (7 jours à un an) et les détails quotidiens sont affichés du plus récent au plus ancien.
 
 Ces fonctionnalités reposent sur l'API publique OpenFoodFacts.
+Pour obtenir des informations plus précises lorsque la base locale échoue,
+l'application peut également interroger Edamam, Spoonacular ou
+Google Custom Search (utilisé notamment pour les produits MyProtein).
+Renseignez les clés correspondantes dans `.env` pour activer ces services.

@@ -1,5 +1,40 @@
 import { searchProductFallback } from './openFoodFacts';
 
+async function searchMyProtein(query: string): Promise<NutritionInfo | null> {
+  const gKey = process.env.GOOGLE_API_KEY;
+  const cseId = process.env.GOOGLE_CSE_ID;
+  if (!gKey || !cseId) return null;
+  try {
+    const q = `site:myprotein.com ${query} valeurs nutritionnelles`;
+    const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(q)}&key=${gKey}&cx=${cseId}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      for (const item of data.items || []) {
+        const text: string = item.snippet || '';
+        const title: string = item.title || query;
+        const cals = text.match(/(\d+(?:[.,]\d+)?)\s*(?:kcal|calories?)/i);
+        const prot = text.match(/(\d+(?:[.,]\d+)?)\s*g\s*prot/i);
+        const carb = text.match(/(\d+(?:[.,]\d+)?)\s*g\s*carb/i);
+        const fat = text.match(/(\d+(?:[.,]\d+)?)\s*g\s*fat/i);
+        if (cals || prot || carb || fat) {
+          return {
+            name: title,
+            calories: cals ? parseFloat(cals[1].replace(',', '.')) : undefined,
+            protein: prot ? parseFloat(prot[1].replace(',', '.')) : undefined,
+            carbs: carb ? parseFloat(carb[1].replace(',', '.')) : undefined,
+            fat: fat ? parseFloat(fat[1].replace(',', '.')) : undefined,
+            unit: '100g'
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.error('MyProtein search error', e);
+  }
+  return null;
+}
+
 export interface NutritionInfo {
   name: string;
   calories?: number;
@@ -21,6 +56,11 @@ export async function searchNutrition(query: string): Promise<NutritionInfo | nu
       fat: p.nutriments?.fat_100g,
       unit: p.serving_size?.includes('ml') ? '100ml' : '100g'
     };
+  }
+
+  if (/myprotein/i.test(query)) {
+    const mp = await searchMyProtein(query);
+    if (mp) return mp;
   }
 
   const appId = process.env.EDAMAM_APP_ID;
